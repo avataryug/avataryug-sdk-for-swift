@@ -33,9 +33,9 @@ struct Expression: Codable
     var  BlendshapeKeys:[ExpressionBlendshape] = []
     
     /// Gets or Sets ThumbnailsUrl
-    var  ThumbnailsUrl : [ExpressionThumbnailUrl] = []
+    var  ThumbnailsUrl :  [ThumbnailUrl] = []
     
-    public init(DisplayName: String, Description: String, Category: String, CustomMetaData: String, Tags: String, Color: String, Metadata: String, Status: Int, ID: String, BlendshapeKeys: [ExpressionBlendshape], ThumbnailsUrl: [ExpressionThumbnailUrl]) {
+    public init(DisplayName: String, Description: String, Category: String, CustomMetaData: String, Tags: String, Color: String, Metadata: String, Status: Int, ID: String, BlendshapeKeys: [ExpressionBlendshape], ThumbnailsUrl:  [ThumbnailUrl]) {
         self.DisplayName = DisplayName
         self.Description = Description
         self.Category = Category

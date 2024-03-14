@@ -9,6 +9,7 @@ public struct GrantInstanceToUserRequestInstanceIDsInner: Codable, JSONEncodable
         case item = "Item"
         case bundle = "Bundle"
         case container = "Container"
+        case currency = "CURRENCY"
     }
     /** Idenfier for the instance which needs to be granted */
     public var instanceID: String

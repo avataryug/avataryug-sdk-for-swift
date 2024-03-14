@@ -17,12 +17,6 @@ public struct GetClipsResultData: Codable, JSONEncodable, Hashable {
     ///Get or Set CustomMetaData
     public var customMetaData: String?
     
-    ///Get or Set ThumbnailUrl
-    public var thumbnailUrl: String?
-    
-    ///Get or Set Artifacts
-    public var artifacts: String?
-    
     ///Get or Set Tags
     public var tags: String?
     
@@ -44,7 +38,14 @@ public struct GetClipsResultData: Codable, JSONEncodable, Hashable {
     ///Get or Set ClipTemplateID
     public var clipTemplateID: String?
 
-    public init(displayName: String? = nil, description: String? = nil, category: String? = nil, customMetaData: String? = nil, thumbnailUrl: String? = nil, artifacts: String? = nil, tags: String? = nil, color: String? = nil, metadata: String? = nil, status: Int? = nil, clipType: Int? = nil, ID: String? = nil, clipTemplateID: String? = nil) {
+    ///Get or Set ThumbnailUrl
+    public var thumbnailUrl: [ClipThumbnails]?
+
+    ///Get or Set Artifacts
+    public var artifacts: [ClipArtifact]?
+
+    
+    public init(displayName: String? = nil, description: String? = nil, category: String? = nil, customMetaData: String? = nil, thumbnailUrl: [ClipThumbnails]? = nil, artifacts: [ClipArtifact]? = nil, tags: String? = nil, color: String? = nil, metadata: String? = nil, status: Int? = nil, clipType: Int? = nil, ID: String? = nil, clipTemplateID: String? = nil) {
         self.displayName = displayName
         self.description = description
         self.category = category

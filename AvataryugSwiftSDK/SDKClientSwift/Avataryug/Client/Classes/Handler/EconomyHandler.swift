@@ -222,14 +222,18 @@ class GetEconomyItems: Base {
   public var category: String
   public var status: Int
   public var gender: Int
-  init(category: String, status: Int, gender: Int) {
+    public var offset: Int
+    public var limit: Int
+  init(category: String, status: Int, gender: Int,offset: Int,limit: Int) {
     self.category = category
     self.status = status
     self.gender = gender
+      self.offset = offset
+      self.limit = limit
   }
 
   func CallApi(completionHandler: @escaping (Result<AnyObject, Error>) -> Void) {
-    EconomyAPI.getEconomyItems(category: category, status: status, gender: gender) {
+    EconomyAPI.getEconomyItems(category: category, status: status, gender: gender,offset: offset,limit: limit) {
       (response, error) in
       guard error == nil else {
           if(ProjectSettings.shared.isDebug)

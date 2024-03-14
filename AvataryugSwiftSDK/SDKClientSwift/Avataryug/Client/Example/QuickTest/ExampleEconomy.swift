@@ -61,8 +61,8 @@ struct ExampleEconomy: View {
 //        } else {
 //            gender = 3
 //        }
-        
-        let auth = EconomyHandler(ApiBase: GetEconomyItems(category: Category.Bottom.rawValue, status: 1, gender: 1))
+      
+        let auth = EconomyHandler(ApiBase: GetEconomyItems(category: Category.Bottom.rawValue, status: 1, gender: 1,offset: 0,limit: 500))
         auth.GetEconomyItems { response in
             switch response {
             case .success(let success):

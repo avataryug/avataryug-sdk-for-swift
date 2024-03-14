@@ -3,12 +3,12 @@ import Foundation
 struct ClipExpressionData :Codable
 {
     /// Gets or Sets Style
-    public var Style : Style!
+    public var Style : Style
     
     /// Gets or Sets gender
     public var gender: Int = 1
     
-    public init(Style: Style!, gender: Int) {
+    public init(Style: Style, gender: Int) {
         self.Style = Style
         self.gender = gender
     }

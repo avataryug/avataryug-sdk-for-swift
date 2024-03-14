@@ -78,3 +78,18 @@ func LoopAllMesh(_bone: SCNNode!, completionHandler: @escaping (SCNGeometry) -> 
     }
   }
 }
+
+func LoopAllMeshMaterial(_bone: SCNNode!, completionHandler: @escaping (SCNGeometry) -> Void) {
+  if !_bone.isEqual(nil) {
+    if let geometry = _bone.geometry {
+      if let _ = geometry.firstMaterial {
+        completionHandler(geometry)
+      }
+    }
+  }
+  if _bone.childNodes.count > 0 {
+    for i in 0..._bone.childNodes.count - 1 {
+        LoopAllMeshMaterial(_bone: _bone.childNodes[i], completionHandler: completionHandler)
+    }
+  }
+}

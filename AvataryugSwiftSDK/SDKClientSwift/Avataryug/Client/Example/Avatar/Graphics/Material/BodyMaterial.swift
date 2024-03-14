@@ -27,9 +27,11 @@ class BodyMaterial
          bodyMaterial.lightingModel = SCNMaterial.LightingModel.physicallyBased
          bodyMaterial.shaderModifiers = [SCNShaderModifierEntryPoint.surface: BodyShader]
 
-         bodyMaterial.setValue(UIColor(red: 255, green: 255, blue: 255), forKey: "bodyColor")
-         bodyMaterial.setValue(bodyTex, forKey: "bodyTexture")
 
+         bodyMaterial.setValue(bodyTex, forKey: "bodyTexture")
+         //bodyMaterial.normal.contents = UIImage(named: "Body_Normal_Raw.jpg")
+//         bodyMaterial.roughness.contents = UIImage(named: "Body_Roughness_Raw.jpg")
+//         bodyMaterial.specular.contents = UIImage(named: "Body_Specular_Raw.jpg")
          for category in BodyTattoCategory
          {
              bodyMaterial.setValue(empty, forKey: category)
@@ -39,9 +41,7 @@ class BodyMaterial
     let BodyShader = """
 
             uniform sampler2D bodyTexture;
-            uniform vec4 bodyColor;
 
-            uniform sampler2D FrontBodyTattoo;
             uniform sampler2D BackBodyTattoo;
             uniform sampler2D RightArmTattoo;
             uniform sampler2D LeftArmTattoo;
@@ -49,14 +49,8 @@ class BodyMaterial
             uniform sampler2D FrontLeftLegTattoo;
             uniform sampler2D BackRightLegTattoo;
             uniform sampler2D BackLeftLegTattoo;
-            uniform sampler2D RightHandTattoo;
-            uniform sampler2D LeftHandTattoo;
-            uniform sampler2D RightFootTattoo;
-            uniform sampler2D LeftFootTattoo;
 
-
-            vec4 _bodyTexture = texture2D(bodyTexture, _surface.diffuseTexcoord) * bodyColor;
-            vec4 _FrontBodyTattoo = texture2D(FrontBodyTattoo, _surface.diffuseTexcoord);
+            vec4 _bodyTexture = texture2D(bodyTexture, _surface.diffuseTexcoord) ;
             vec4 _BackBodyTattoo = texture2D(BackBodyTattoo, _surface.diffuseTexcoord);
             vec4 _RightArmTattoo = texture2D(RightArmTattoo, _surface.diffuseTexcoord);
             vec4 _LeftArmTattoo = texture2D(LeftArmTattoo, _surface.diffuseTexcoord);
@@ -64,53 +58,32 @@ class BodyMaterial
             vec4 _FrontLeftLegTattoo = texture2D(FrontLeftLegTattoo, _surface.diffuseTexcoord);
             vec4 _BackRightLegTattoo = texture2D(BackRightLegTattoo, _surface.diffuseTexcoord);
             vec4 _BackLeftLegTattoo = texture2D(BackLeftLegTattoo, _surface.diffuseTexcoord);
-            vec4 _RightHandTattoo = texture2D(RightHandTattoo, _surface.diffuseTexcoord);
-            vec4 _LeftHandTattoo = texture2D(LeftHandTattoo, _surface.diffuseTexcoord);
-            vec4 _RightFootTattoo = texture2D(RightFootTattoo, _surface.diffuseTexcoord);
-            vec4 _LeftFootTattoo = texture2D(LeftFootTattoo, _surface.diffuseTexcoord);
+            
+            vec4 layer1 = mix(_bodyTexture,_BackBodyTattoo,_BackBodyTattoo.w);
+            vec4 layer2 = mix(layer1,_RightArmTattoo,_RightArmTattoo.w);
+            vec4 layer3 = mix(layer2,_LeftArmTattoo,_LeftArmTattoo.w);
+            vec4 layer4 = mix(layer3,_FrontRightLegTattoo,_FrontRightLegTattoo.w);
+            vec4 layer5 = mix(layer4,_FrontLeftLegTattoo,_FrontLeftLegTattoo.w);
+            vec4 layer6 = mix(layer5,_BackRightLegTattoo,_BackRightLegTattoo.w);
+            vec4 layer7 = mix(layer6,_BackLeftLegTattoo,_BackLeftLegTattoo.w);
 
-            vec4 layer1 = mix(_bodyTexture,_FrontBodyTattoo,_FrontBodyTattoo.w);
-            vec4 layer2 = mix(layer1,_BackBodyTattoo,_BackBodyTattoo.w);
-            vec4 layer3 = mix(layer2,_RightArmTattoo,_RightArmTattoo.w);
-            vec4 layer4 = mix(layer3,_LeftArmTattoo,_LeftArmTattoo.w);
-            vec4 layer5 = mix(layer4,_FrontRightLegTattoo,_FrontRightLegTattoo.w);
-            vec4 layer6 = mix(layer5,_FrontLeftLegTattoo,_FrontLeftLegTattoo.w);
-            vec4 layer7 = mix(layer6,_BackRightLegTattoo,_BackRightLegTattoo.w);
-            vec4 layer8 = mix(layer7,_BackLeftLegTattoo,_BackLeftLegTattoo.w);
-            vec4 layer9 = mix(layer8,_RightHandTattoo,_RightHandTattoo.w);
-            vec4 layer10 = mix(layer9,_LeftHandTattoo,_LeftHandTattoo.w);
-            vec4 layer11 = mix(layer10,_RightFootTattoo,_RightFootTattoo.w);
-            vec4 layer12 = mix(layer11,_LeftFootTattoo,_LeftFootTattoo.w);
-            _surface.diffuse = layer12;
-            _surface.roughness = 0.5;
+            _surface.diffuse = layer7;
+            _surface.roughness = 0.8;
             """
 
 
-    public func SetBodyColor(_color:UIColor)
-    {
-        bodyMaterial.setValue( _color , forKey: "bodyColor")
-    }
-     func RemoveBodyColor()
-     {
-         bodyMaterial.setValue( UIColor(red: 255, green: 255, blue: 255) , forKey: "bodyColor")
-     }
-     func ResetSkinTonetexture()
-     {
-         bodyMaterial.setValue(bodyTex, forKey: "bodyTexture")
-     }
+
+
+    
      func SetSkinTonetexture(skinTex:UIImage)
      {
          let tex = SCNMaterialProperty(contents: skinTex)
-         bodyMaterial.setValue(UIColor(red: 255, green: 255, blue: 255), forKey: "bodyColor")
          bodyMaterial.setValue(tex, forKey: "bodyTexture")
-//         FaceColor = UIColor(.white)
      }
      func RemoveSkinTonetexture()
      {
-         let tex = SCNMaterialProperty(contents: bodyTex)
-         bodyMaterial.setValue(tex, forKey: "bodyTexture")
-//         FaceColor = UIColor(.white)
-         bodyMaterial.setValue(UIColor(red: 255, green: 255, blue: 255), forKey: "bodyColor")
+
+         bodyMaterial.setValue(bodyTex, forKey: "bodyTexture")
      }
     func SetTattooTexture(key:String, texture: UIImage)
     {
@@ -125,6 +98,6 @@ class BodyMaterial
          }
      }
 
-    var BodyTattoCategory : [String] = [ "LeftHandTattoo","RightHandTattoo","LeftArmTattoo","RightArmTattoo","LeftFootTattoo","RightFootTattoo",
-        "FrontLeftLegTattoo","FrontRightLegTattoo",  "BackBodyTattoo", "FrontBodyTattoo",  "BackLeftLegTattoo", "BackRightLegTattoo","HeadTattoo"]
+    var BodyTattoCategory : [String] = [ "LeftArmTattoo","RightArmTattoo",
+        "FrontLeftLegTattoo","FrontRightLegTattoo",  "BackBodyTattoo", "BackLeftLegTattoo", "BackRightLegTattoo","HeadTattoo"]
 }

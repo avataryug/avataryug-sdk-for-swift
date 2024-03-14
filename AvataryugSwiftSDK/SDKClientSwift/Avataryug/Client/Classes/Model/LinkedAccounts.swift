@@ -3,12 +3,12 @@ import Foundation
 struct LinkedAccounts: Codable
 {
     /// Gets or Sets Platform
-    var Platform: String?
+    var Platform: String
     
     /// Gets or Sets PlatformUserID
-    var PlatformUserID: String?
+    var PlatformUserID: String
     
-    public init( Platform: String?, PlatformUserID: String?) {
+    public init( Platform: String, PlatformUserID: String) {
         self.Platform = Platform
         self.PlatformUserID = PlatformUserID
     }

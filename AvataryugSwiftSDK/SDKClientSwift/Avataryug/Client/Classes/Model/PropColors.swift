@@ -3,22 +3,22 @@ import Foundation
 struct PropColors : Codable ,Hashable
 {
     /// Gets or Sets HairColor
-    public var HairColor :String?
+    public var HairColor :String
     
     /// Gets or Sets EyebrowColor
-    public var EyebrowColor :String?
+    public var EyebrowColor :String
     
     /// Gets or Sets FacialHairColor
-    public var FacialHairColor :String?
+    public var FacialHairColor :String
     
     /// Gets or Sets LipColor
-    public var LipColor :String?
+    public var LipColor :String
     
     /// Gets or Sets FaceColor
-    public var FaceColor :String?
+    public var FaceColor :String
 
     
-    public init( HairColor :String?, EyebrowColor :String?, FacialHairColor :String?, LipColor :String?, FaceColor :String?) {
+    public init( HairColor :String, EyebrowColor :String, FacialHairColor :String, LipColor :String, FaceColor :String) {
         self.HairColor = HairColor
         self.EyebrowColor = EyebrowColor
         self.FacialHairColor = FacialHairColor

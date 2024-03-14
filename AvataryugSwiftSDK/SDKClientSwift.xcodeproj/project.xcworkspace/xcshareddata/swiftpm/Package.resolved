@@ -1,12 +1,21 @@
 {
   "pins" : [
     {
-      "identity" : "gltfscenekit",
+      "identity" : "dracoswift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/magicien/GLTFSceneKit.git",
+      "location" : "https://github.com/warrenm/DracoSwift.git",
       "state" : {
-        "branch" : "master",
-        "revision" : "a9587ec5c6515ee7d036533fdd909815a9a718ef"
+        "revision" : "753dda00a67debba06ec3cb25750603f8a6026f0",
+        "version" : "1.5.6"
+      }
+    },
+    {
+      "identity" : "gltfkit2",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/warrenm/GLTFKit2.git",
+      "state" : {
+        "revision" : "0227f6df43817c0038f04b2399233ea76907cb6d",
+        "version" : "0.5.9"
       }
     }
   ],

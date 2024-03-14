@@ -18,7 +18,7 @@ public struct GetExpressionsResultDataInner: Codable, JSONEncodable, Hashable {
     public var customMetaData: String
     
     ///Get or Set ThumbnailUrl
-    public var thumbnailUrl: String
+    public var  thumbnailUrl: [ThumbnailUrl]
     
     ///Get or Set BlendshapeKeys
     public var blendshapeKeys: String
@@ -38,7 +38,7 @@ public struct GetExpressionsResultDataInner: Codable, JSONEncodable, Hashable {
     ///Get or Set ID
     public var ID: String
 
-    public init(displayName: String, description: String, category: String, customMetaData: String, thumbnailUrl: String, blendshapeKeys: String, tags: String, color: String, metadata: String, status: Int, ID: String) {
+    public init(displayName: String, description: String, category: String, customMetaData: String, thumbnailUrl:  [ThumbnailUrl], blendshapeKeys: String, tags: String, color: String, metadata: String, status: Int, ID: String) {
         self.displayName = displayName
         self.description = description
         self.category = category
@@ -84,3 +84,37 @@ public struct GetExpressionsResultDataInner: Codable, JSONEncodable, Hashable {
     }
 }
 
+
+public struct ThumbnailUrl: Codable, JSONEncodable, Hashable {
+
+    ///Get or Set DisplayName
+    public var device: Int
+    
+    ///Get or Set Description
+    public var texture: Int
+    
+    ///Get or Set Category
+    public var thumbnail_url: String
+
+
+    public init(device: Int, texture: Int, thumbnail_url: String) {
+        self.device = device
+        self.texture = texture
+        self.thumbnail_url = thumbnail_url
+    }
+
+    public enum CodingKeys: String, CodingKey, CaseIterable {
+        case device = "device"
+        case texture = "texture"
+        case thumbnail_url = "thumbnail_url"
+    }
+
+    // Encodable protocol methods
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(device, forKey: .device)
+        try container.encode(texture, forKey: .texture)
+        try container.encode(thumbnail_url, forKey: .thumbnail_url)
+    }
+}

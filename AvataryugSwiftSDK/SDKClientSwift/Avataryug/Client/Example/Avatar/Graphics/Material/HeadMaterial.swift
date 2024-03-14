@@ -16,18 +16,14 @@ class HeadMaterial
     let headTex = SCNMaterialProperty(contents: UIImage(named: "face_diffuse.jpg")!)
     let lipTex = SCNMaterialProperty(contents: UIImage(named: "lips.png")!)
     let eyebrowTex = SCNMaterialProperty(contents: UIImage(named: "eyebrow.png")!)
-    let eyelinerTex = SCNMaterialProperty(contents: UIImage(named: "Eyeliner.png")!)
     private init()
     {
         headMaterial.name = "head"
         headMaterial.lightingModel = SCNMaterial.LightingModel.physicallyBased
-        //headMaterial.lightingModel = SCNMaterial.LightingModel.phong
         headMaterial.shaderModifiers = [SCNShaderModifierEntryPoint.surface: HeadShader]
-        
-//        headMaterial.setValue(UIColor(red: 255, green: 156, blue: 64), forKey: "bodyColor")
-        headMaterial.setValue(UIColor(red: 255, green: 255, blue: 255), forKey: "bodyColor")
+
         headMaterial.setValue(headTex, forKey: "bodyTexture")
-        
+
         headMaterial.setValue(empty, forKey: "HeadTattoo")
         
         headMaterial.setValue(empty, forKey: "HairTexture")
@@ -39,9 +35,6 @@ class HeadMaterial
         headMaterial.setValue(eyebrowTex, forKey: "EyebrowTexture")
         headMaterial.setValue(UIColor.black, forKey: "EyebrowColor")
         
-        headMaterial.setValue(eyelinerTex, forKey: "EyelinerTexture")
-        headMaterial.setValue(UIColor.black, forKey: "EyelinerColor")
-        
         headMaterial.setValue(lipTex, forKey: "LipsTexture")
         headMaterial.setValue(UIColor.red, forKey: "LipsColor")
     
@@ -51,12 +44,11 @@ class HeadMaterial
     var EyebrowColor : String = "#272727"
     var FacialHairColor : String = "#3b3b3b"
     var LipColor :String = "#ff9e7e"
-    var FaceColor : String = "#FFFFFF"
+
 
    let HeadShader = """
 
            uniform sampler2D bodyTexture;
-           uniform vec4 bodyColor;
            
            uniform sampler2D HeadTattoo;
            
@@ -69,58 +61,47 @@ class HeadMaterial
            uniform sampler2D EyebrowTexture;
            uniform vec4 EyebrowColor;
 
-           uniform sampler2D EyelinerTexture;
-           uniform vec4 EyelinerColor;
-
            uniform sampler2D LipsTexture;
            uniform vec4 LipsColor;
 
-           vec4 _bodyTexture = texture2D(bodyTexture, _surface.diffuseTexcoord) * bodyColor;
-           vec4 _tattooTexture = texture2D(HeadTattoo, _surface.diffuseTexcoord);
+           
+           
+           vec4 _bodyTexture = texture2D(bodyTexture, _surface.diffuseTexcoord) ;
+
+            vec4 _tattooTexture = texture2D(HeadTattoo, _surface.diffuseTexcoord);
            
             vec4 _hairTexture = texture2D(HairTexture, _surface.diffuseTexcoord) * HairColor;
             vec4 _beardTexture = texture2D(BeardTexture, _surface.diffuseTexcoord) * BeardColor;
             vec4 _eyebrowTexture = texture2D(EyebrowTexture, _surface.diffuseTexcoord) * EyebrowColor;
-            vec4 _eyelinerTexture = texture2D(EyelinerTexture, _surface.diffuseTexcoord) * EyelinerColor;
             vec4 _lipsTexture = texture2D(LipsTexture, _surface.diffuseTexcoord) * LipsColor;
            
            vec4 layer1 = mix(_bodyTexture,_tattooTexture,_tattooTexture.w);
            vec4 layer2 = mix(layer1,_hairTexture,_hairTexture.w);
            vec4 layer3 = mix(layer2,_beardTexture,_beardTexture.w);
            vec4 layer4 = mix(layer3,_eyebrowTexture,_eyebrowTexture.w);
-           vec4 layer5 = mix(layer4,_eyelinerTexture,_eyelinerTexture.w);
-           vec4 layer6 = mix(layer5,_lipsTexture,_lipsTexture.w);
+           vec4 layer6 = mix(layer4,_lipsTexture,_lipsTexture.w);
+
            _surface.diffuse = layer6;
-           _surface.roughness = 0.5;
+           _surface.roughness = 0.8;
            """
 
-
-   func SetBodyColor(_color:UIColor)
-   {
-       headMaterial.setValue( _color , forKey: "bodyColor")
-       FaceColor =  _color.toHexString()
-   }
-
-    func RemoveBodyColor()
-    {
-        headMaterial.setValue( UIColor(red: 255, green: 255, blue: 255) , forKey: "bodyColor")
-        FaceColor = "#FFFFFF"
+    public func SetFaceTex(){
+        print("=========>",headTex)
+        headMaterial.setValue(headTex, forKey: "bodyTexture")
     }
+
 
     func SetSkinTonetexture(skinTex:UIImage)
     {
-        FaceColor = "#FFFFFF"
-        headMaterial.setValue(UIColor(red: 255, green: 255, blue: 255), forKey: "bodyColor")
+        print("/////////////// skintone")
         let tex = SCNMaterialProperty(contents: skinTex)
         headMaterial.setValue(tex, forKey: "bodyTexture")
-        FaceColor = "#FFFFFF"
     }
     func RemoveSkinTonetexture()
     {
-        let tex = SCNMaterialProperty(contents: headTex)
-        headMaterial.setValue(tex, forKey: "bodyTexture")
-        FaceColor = "#FFFFFF"
-        headMaterial.setValue(UIColor(red: 255, green: 255, blue: 255), forKey: "bodyColor")
+        print("/////////////// remove skintone")
+        headMaterial.setValue(headTex, forKey: "bodyTexture")
+     
     }
     func SetTattooTexture(tatto:UIImage)
     {
@@ -172,7 +153,7 @@ class HeadMaterial
     func RemoveBreardColor()
     {
         headMaterial.setValue(UIColor.black, forKey: "BeardColor")
-        FacialHairColor = "#3b3b3b"
+       FacialHairColor = "#3b3b3b"
     }
     
     //eyebrow

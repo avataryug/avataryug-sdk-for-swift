@@ -1,7 +1,6 @@
 import Foundation
 import SceneKit
-import GLTFSceneKit
-
+import GLTFKit2
 
 // The "AvatarLoaderBase" class is a base class responsible for managing the process of loading and handling avatar mesh information.
 // It serves as a foundation for performing tasks like managing conflict buckets,
@@ -12,7 +11,10 @@ import GLTFSceneKit
 class AvatarLoaderBase
 {
     
-    public init(){}
+    public init()
+    {
+        GLTFAsset.dracoDecompressorClassName = "DracoDecompressor"
+    }
     
     //Hold selected model data
     //Used for removing same model and compare with next model
@@ -32,6 +34,9 @@ class AvatarLoaderBase
     var currentEyeShapeData : GetEconomyItemsResultDataInner!
     var currentLipShapeData : GetEconomyItemsResultDataInner!
     var currentEarshapeData : GetEconomyItemsResultDataInner!
+    
+    var currentHairData : GetEconomyItemsResultDataInner!
+    var currentFacialhairData : GetEconomyItemsResultDataInner!
     
     var headwearModelList : [GetEconomyItemsResultDataInner] = []
     var networkModelQueueList : [GetEconomyItemsResultDataInner] = []
@@ -62,10 +67,12 @@ class AvatarLoaderBase
     var innermouthmorpherModel : SCNMorpher!
     var headmorpherModel : SCNMorpher!
     
-    var boneAnimationList : [SCNNode] = []
+
+     var boneAnimationList = [GLTFSCNAnimation]()
+
     var modelBone : [SCNNode] = []
     var bodyPoints : [SCNNode] = []
-    var OnBoardingModelst :[SCNNode] = []
+
     var clipBones : [SCNNode] = []
     
     var VertexList : [SCNVector3] = []
@@ -73,63 +80,79 @@ class AvatarLoaderBase
     var HeadCoreBuck :String = ""
     
     var firstTime = false;
-    var isClicked = false
+
+
     
     //This method load head model from network
     //Also load vertex point detail for facewear models
     func LoadHeadModelVertices(completionHandler: @escaping () -> Void) {
-      ApiEvents.shared.ShowLoading()
-      let auth = AvatarManagementHandler(
-        ApiBase: GetGetallbucketvertices(
-          platform: AvatarManagementAPI.Platform_getGetallbucketvertices.ios))
-      auth.GetGetallbucketvertices(completionHandler: {
-        (response) in
-        switch response
-        {
-        case .success(let success):
-          ApiEvents.shared.HideLoading()
-          self.vertexData = success.data!
-          if self.headNode.childNodes.count == 0 {
-            self.firstTime = true
-            self.LoadHeadModel(completionHandler: {
-              self.SetAnimation(_bone: self.headNode)
-              completionHandler()
-            })
-          }
-        case .failure(let failure):
-          ApiEvents.shared.HideLoading()
-          ApiEvents.shared.ShowPopupMessage(message: failure.localizedDescription)
+//      ApiEvents.shared.ShowLoading()
+//      let auth = AvatarManagementHandler(
+//        ApiBase: GetGetallbucketvertices(
+//          platform: AvatarManagementAPI.Platform_getGetallbucketvertices.ios))
+//      auth.GetGetallbucketvertices(completionHandler: {
+//        (response) in
+//        switch response
+//        {
+//        case .success(let success):
+//          ApiEvents.shared.HideLoading()
+        do {
+            
+            let vertresult  = try? JSONDecoder().decode(GetAllBucketVerticesResult.self, from: VertexPointList.shared.vertexlist.data(using: .utf8)!)
+            
+            self.vertexData =      (vertresult?.data)!
+            if self.headNode.childNodes.count == 0 {
+                self.firstTime = true
+                self.LoadHeadModel(completionHandler: {
+                    self.RemoveClip()
+                    self.SetAnimation(_bone: self.topNodes)
+                    
+                    completionHandler()
+                })
+            }
         }
-      })
+//        case .failure(let failure):
+//          ApiEvents.shared.HideLoading()
+//          ApiEvents.shared.ShowPopupMessage(message: failure.localizedDescription)
+//        }
+//      })
     }
 
     //Load head glb from local path
-    public func LoadHeadModel(completionHandler: @escaping () -> Void) {
-      do {
-        let sceneSource = try GLTFSceneSource(named: "head_generic.glb")
-        let scene = try sceneSource.scene()
-        for item in scene.rootNode.childNodes {
-          headNode.addChildNode(item)
+    public func LoadHeadModel(completionHandler: @escaping () -> Void)
+    {
+        guard let assetURL = Bundle.main.url(forResource: "head_generic",withExtension: "glb")
+        else {
+            print("Failed to find asset for URL")
+            return
         }
-        SetHeadMaterialAndFacewearPoints(_bone: headNode)
-        completionHandler()
-      } catch {
-        isClicked = false
 
-        return
-      }
+        GLTFAsset.load(with: assetURL, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+            let sceneSource =  GLTFSCNSceneSource(asset: maybeAsset!)
+            let scene = sceneSource.defaultScene
+            self.LoopAllMixamoNodes(_bone: scene?.rootNode, completionHandler: { nod in})
+            for item in scene!.rootNode.childNodes {
+                self.headNode.addChildNode(item)
+            }
+            self.SetHeadMaterialAndFacewearPoints(_bone: self.headNode)
+            completionHandler()
+        }
     }
 
     // This method retunr gender form user profile or return hard coded gender
     func GetGender() -> Gender {
-      var gender = Gender.Male
-      //        if(UserDetailHolder.shared.userDetail.Genders  == 1)
-      //        {
-      //            gender = Gender.Male
-      //        }else{
-      //            gender = Gender.Female
-      //        }
-      return gender
+        var gender = Gender.Male
+#if AVATARYUG_DEMO
+        if(UserDetailHolder.shared.userDetail.Genders  == Gender.Male)
+        {
+            gender = Gender.Male
+        }
+        else
+        {
+            gender = Gender.Female
+        }
+        #endif
+        return gender
     }
 
     //Loop through all bone of model to check blendshape geometry
@@ -179,8 +202,9 @@ class AvatarLoaderBase
         let nodename = currentNodePoint.childNodes[0].name!
         if nodename.contains(modelData.ID) {
           isSameModelPresent = true
-          //  DataHolder.shared.RemovePart(economyItem: modelData)
-          isClicked = false
+            #if AVATARYUG_DEMO
+          DataHolder.shared.RemovePart(economyItem: modelData)
+            #endif
           for item in currentNodePoint.childNodes {
             item.removeFromParentNode()
           }
@@ -196,8 +220,9 @@ class AvatarLoaderBase
 
           self.HeadCoreBuck = ""
           self.ResetBlendshapes()
-
-          //  DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+          DataHolder.shared.RemovePart(economyItem: modelData)
+            #endif
           if self.headwearModelNode.childNodes.count > 0 {
             for points in self.headwearModelNode.childNodes {
               points.removeFromParentNode()
@@ -229,26 +254,24 @@ class AvatarLoaderBase
             let jsonData = modelData.artifacts.data(using: .utf8)!
             do {
               let artifacts = try JSONDecoder().decode([ThreeDArtifact].self, from: jsonData)
-                
               ApiEvents.shared.ShowLoading()
-                if(artifacts.count > 0)
+                let artifact = artifacts.first(where: {$0.device == Int(GetPlatfrom().rawValue) })
+                if(artifact != nil)
                 {
-                    let artifact = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
-                    if(artifact != nil)
-                    {
-                        self.LoadModelData(urlstr: (artifact?.url!)!,
+                    self.LoadModelData(urlstr: (artifact?.url!)!,  completionHandler: {
+                        data in
+                        ModelDecryptionHandler.shared.GetModelData(
+                          data: data,
                           completionHandler: {
-                            data in
-                            ModelDecryptionHandler.shared.GetModelData(
-                              data: data,
-                              completionHandler: {
-                                decdata in
-                                do {
-                                  let sceneSource = GLTFSceneSource(data: decdata)
-                                  let scene = try sceneSource.scene()
+                            decdata in
+                              
+                              GLTFAsset.load(with: decdata, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                                      
+                                  let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+                                  let scene = sceneSource.defaultScene
                                   let tempnode = SCNNode()
                                   tempnode.name = bucketname + "+" + modelData.ID
-                                  for meshdata in scene.rootNode.childNodes {
+                                  for meshdata in scene!.rootNode.childNodes {
                                     tempnode.addChildNode(meshdata)
                                     meshdata.position = SCNVector3(0, 0, 0)
                                     meshdata.eulerAngles = SCNVector3(0, 0, 0)
@@ -285,28 +308,25 @@ class AvatarLoaderBase
 
                                   }
                                   tempnode.isHidden = false
-                                  //     DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                                  DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                  #endif
                                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                     ApiEvents.shared.HideLoading()
                                     self.OnQueueNetworkModel()
                                   }
-                                } catch {
-                                  self.isClicked = false
-                                    if(ProjectSettings.shared.isDebug)
-                                    {
-                                        print("\(error.localizedDescription)")
-                                    }
-                                  ApiEvents.shared.HideLoading()
-                                  ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
                                 }
-                              })
                           })
-                    }
+                      })
+                }else
+                {
+                    ApiEvents.shared.HideLoading()
+                    ApiEvents.shared.ShowPopupMessage(message: "data not available")
+                    self.OnQueueNetworkModel()
                 }
-                
-       
+           
             } catch {
-              self.isClicked = false
+   
                 if(ProjectSettings.shared.isDebug)
                 {
                     print(error)
@@ -327,30 +347,54 @@ class AvatarLoaderBase
         defaultModelList.remove(at: 0)
         LoadDefaultModel(defaultModel: modelta)
       } else {
-        isClicked = false
+ 
         if firstTime {
           firstTime = false
-          //onCompleteLoadDefaultModel?(true)
+          onCompleteLoadDefaultModel?(true)
         }
       }
     }
     
     //This method load default model glb model
     func LoadDefaultModel(defaultModel: ModelData) {
-      // ApiEvents.shared.ShowLoading()
-      LoadModelData(urlstr: defaultModel.GlbPath!, completionHandler: {
-          (data) in
-          let sceneSource = GLTFSceneSource(data: data)
+       ApiEvents.shared.ShowLoading()
+        
+        guard let assetURL = Bundle.main.url(forResource: defaultModel.GlbPathOffline,withExtension: "glb")
+        else {
+            print("Failed to find asset for URL")
+            return
+        }
 
-          self.AddDefaultBodyPart(
-            model: sceneSource, modelData: defaultModel,
-            completionHandler: {
-              DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                ApiEvents.shared.HideLoading()
-                self.OnQueueDefaultModel()
-              }
-            })
-        })
+        GLTFAsset.load(with: assetURL, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+            let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+
+            self.AddDefaultBodyPart(
+              model: sceneSource, modelData: defaultModel,
+              completionHandler: {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                  ApiEvents.shared.HideLoading()
+                  self.OnQueueDefaultModel()
+                }
+              })
+        }
+
+        
+//      LoadModelData(
+//        urlstr: defaultModel.GlbPath,
+//        completionHandler: {
+//          (data) in
+//          let sceneSource = GLTFSceneSource(data: data)
+//
+//          self.AddDefaultBodyPart(
+//            model: sceneSource, modelData: defaultModel,
+//            completionHandler: {
+//              DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+//                ApiEvents.shared.HideLoading()
+//                self.OnQueueDefaultModel()
+//              }
+//            })
+//        })
+        
     }
 
     // Thid method remove perticault bucket child model
@@ -374,10 +418,10 @@ class AvatarLoaderBase
 
     
     // After downloading model this function set model in scene in its perticular bucket
-    func AddDefaultBodyPart(model:GLTFSceneSource,modelData: ModelData,completionHandler: @escaping () -> Void)
+    func AddDefaultBodyPart(model:GLTFSCNSceneSource,modelData: ModelData,completionHandler: @escaping () -> Void)
     {
         var bucketname : String;
-        let buckets = modelData.CoreBucket!.split(separator: "/");
+        let buckets = modelData.CoreBucket.split(separator: "/");
         bucketname = String(buckets[0])
         var isPresent : Bool = false;
         if(buckets.count>1){
@@ -385,19 +429,11 @@ class AvatarLoaderBase
         }
         var bodyPoint : SCNNode!
         
-        if(bodyPoints.count > 0)
-        {
-            for item in bodyPoints{
-                if(item.name == bucketname){
-                    isPresent = true
-                    bodyPoint = item
-                }
-            }
-        }
+       
         var allConflictNames : [Conflict] = []
-        if( !modelData.ConflictingBuckets!.isEmpty)
+        if( !modelData.ConflictingBuckets.isEmpty)
         {
-            let jsonArrayData = modelData.ConflictingBuckets!.data(using: .utf8)!
+            let jsonArrayData = modelData.ConflictingBuckets.data(using: .utf8)!
             do{
                 if let jsonArr = try JSONSerialization.jsonObject(with: jsonArrayData, options: .allowFragments) as? [Dictionary<String,Any>]
                 {
@@ -418,47 +454,27 @@ class AvatarLoaderBase
             }
             catch
             {
-                isClicked = false;
+     
             }
         }
         
-        if (bodyPoints.count > 0)
+        RemoveBodyPoint(name: bucketname)
+     
+        for conflictBucket in allConflictNames
         {
-            for item in bodyPoints
-            {
-                if(item.name == bucketname)
-                {
-                    if(item.childNodes.count > 0)
-                    {
-                        for child in item.childNodes
-                        {
-                            child.removeFromParentNode()
-                        }
-                    }
-                }
-            }
+            RemoveBodyPoint(name: conflictBucket.name)
         }
-        
+      
         if(bodyPoints.count > 0)
         {
-            for item in bodyPoints
-            {
-                for conflictBucket in allConflictNames
-                {
-                    if(item.name == conflictBucket.name)
-                    {
-                        if(item.childNodes.count > 0)
-                        {
-                            
-                            for child in item.childNodes{
-                                child.removeFromParentNode()
-                            }
-                            
-                        }
-                    }
+            for item in bodyPoints{
+                if(item.name == bucketname){
+                    isPresent = true
+                    bodyPoint = item
                 }
             }
         }
+        
         if(!isPresent){
             bodyPoint =  SCNNode()
             bodyPoint.name = bucketname
@@ -468,11 +484,10 @@ class AvatarLoaderBase
             CustomizeModelParent.addChildNode(bodyPoint)
         }
         
-        do
-        {
-            print("=======",modelData.MainCatID)
-            let scene = try model.scene()
-            for item in scene.rootNode.childNodes
+      
+            let scene =  model.defaultScene
+        self.LoopAllMixamoNodes(_bone: scene?.rootNode, completionHandler: { nod in})
+            for item in scene!.rootNode.childNodes
             {
                 bodyPoint.addChildNode(item)
             }
@@ -492,14 +507,11 @@ class AvatarLoaderBase
             if(modelData.MainCatID == Category.Handwear.rawValue)
             {
                 handwearNodes  = bodyPoint
+                
             }
             self.RemoveClip()
             self.SetAnimation(_bone: topNodes)
-            self.SetAnimation(_bone: bottomNodes)
-            self.SetAnimation(_bone: outfitnodes)
-            self.SetAnimation(_bone: footwearNodes)
-            self.SetAnimation(_bone: handwearNodes)
-            self.SetAnimation(_bone: headNode)
+
             
             LoopAllMesh(_bone: bodyPoint, completionHandler: {
                 node in
@@ -507,105 +519,86 @@ class AvatarLoaderBase
                 {
                     node.firstMaterial = BodyMaterial.shared.bodyMaterial
                 }
+               
+                if(modelData.Gender == 0){
+                    if(node.firstMaterial?.name == "upperbody_sleeveless.001" ){
+                        node.firstMaterial = DefaultModelMaterial.shared.maleTopMaterial
+                    }
+                    if(node.firstMaterial?.name == "lowerbody_till_knee"){
+                        node.firstMaterial = DefaultModelMaterial.shared.maleBottomMaterial
+                    }
+                    
+                }else{
+                    if(node.firstMaterial?.name == "upperbody_sleeveless"  || node.firstMaterial?.name == "upperbody_sleeve_short"){
+                        node.firstMaterial = DefaultModelMaterial.shared.femaleTopMaterial
+                    }
+                    if(node.name == "lowerbody_till_knee"){
+                        node.firstMaterial = DefaultModelMaterial.shared.femaleBottomMaterial
+                    }
+                }
             })
             completionHandler()
-        }
-        catch
-        {
-            isClicked = false;
-            return
-        }
-        
     }
     
     //This Method Add Animation to loaded model
     func SetAnimation(_bone: SCNNode!) {
-      if _bone != nil {
-        for item in boneAnimationList {
-          if item.name != nil {
-            LoopAllNodes(
-              _bone: _bone,
-              completionHandler: {
-                node in
-                  
-                  var nodename = ""
-                  if((node.name?.contains("mixamorig:")) != nil)
-                  {
-                      nodename = node.name!.replacingOccurrences(of: "mixamorig:", with: "")
-                  }
-                  
-                      if(nodename == item.name) {
-                  if item.animationPlayer(forKey: "rotation") != nil {
-                    node.addAnimationPlayer(
-                      item.animationPlayer(forKey: "rotation")!, forKey: "rotation")
-                  }
-                  if item.animationPlayer(forKey: "translation") != nil {
-                    node.addAnimationPlayer(
-                      item.animationPlayer(forKey: "translation")!, forKey: "translation")
-                  }
-//                  if item.animationPlayer(forKey: "scale") != nil {
-//                    node.addAnimationPlayer(item.animationPlayer(forKey: "scale")!, forKey: "scale")
-//                  }
-                }
-              })
-          }
+        
+        if let defaultAnimation = self.boneAnimationList.first {
+            defaultAnimation.animationPlayer.animation.usesSceneTimeBase = false
+            defaultAnimation.animationPlayer.animation.repeatCount = .greatestFiniteMagnitude
+            if(self.topNodes != nil){
+                self.topNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+            }
+            if(self.bottomNodes != nil){
+                self.bottomNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+            }
+            if(self.handwearNodes != nil){
+                self.handwearNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+            }
+            if(self.footwearNodes != nil){
+                self.footwearNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+            }
+            if(self.outfitnodes != nil){
+                self.outfitnodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+            }
+            if(self.headNode != nil){
+                self.headNode.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+            }
+            defaultAnimation.animationPlayer.play()
         }
-      }
+
     }
     //This Method add loaded body part from network to its bucket
-    func AddNetworkBodyPart(model:GLTFSceneSource,modelData: GetEconomyItemsResultDataInner,closure:()->Void)
+    func AddNetworkBodyPart(model:GLTFSCNSceneSource,modelData: GetEconomyItemsResultDataInner,closure:()->Void)
     {
-        let bucketname = GetBucketName(coreBucket: modelData.coreBucket)
+       let bucketname = GetBucketName(coreBucket: modelData.coreBucket)
+    
+        var conflict :[Conflict] = []
+        conflict = try! JSONDecoder().decode([Conflict].self, from: modelData.conflictingBuckets.data(using: .utf8)!)
+
+        RemoveBodyPoint(name: bucketname)
+        
+
+        for conflictBucket in conflict
+        {
+            RemoveBodyPoint(name: conflictBucket.name)
+          
+        }
+ 
         var isPresent : Bool = false;
         var bodyPoint : SCNNode!
         if(bodyPoints.count > 0)
         {
             for item in bodyPoints{
+                print(item)
                 if(item.name == bucketname){
                     isPresent = true
                     bodyPoint = item
                 }
             }
         }
+
         
-        let conflict = try? JSONDecoder().decode([Conflict].self, from: modelData.conflictingBuckets.data(using: .utf8)!)
-        
-        if (bodyPoints.count > 0)
-        {
-            for item in bodyPoints
-            {
-                if(item.name == bucketname)
-                {
-                    if(item.childNodes.count > 0)
-                    {
-                        for child in item.childNodes
-                        {
-                            child.removeFromParentNode()
-                        }
-                    }
-                }
-            }
-        }
-        
-        if(bodyPoints.count > 0)
-        {
-            for item in bodyPoints
-            {
-                for conflictBucket in conflict!
-                {
-                    if(item.name == conflictBucket.name)
-                    {
-                        if(item.childNodes.count > 0)
-                        {
-                            for child in item.childNodes
-                            {
-                                child.removeFromParentNode()
-                            }
-                        }
-                    }
-                }
-            }
-        }
         if(!isPresent)
         {
             bodyPoint =  SCNNode()
@@ -616,10 +609,17 @@ class AvatarLoaderBase
             bodyPoints.append(bodyPoint)
             CustomizeModelParent.addChildNode(bodyPoint)
         }
-        do
-        {
-            let scene = try model.scene()
-            for item in scene.rootNode.childNodes
+     
+            let scene = model.defaultScene
+            
+            LoopAllMixamoNodes(_bone: scene?.rootNode, completionHandler: {
+                tempnode in
+    
+            
+            })
+            
+          
+            for item in scene!.rootNode.childNodes
             {
                 item.scale = SCNVector3(1,1,1)
                 bodyPoint.addChildNode(item)
@@ -647,11 +647,7 @@ class AvatarLoaderBase
             }
             self.RemoveClip()
             self.SetAnimation(_bone: topNodes)
-            self.SetAnimation(_bone: bottomNodes)
-            self.SetAnimation(_bone: outfitnodes)
-            self.SetAnimation(_bone: footwearNodes)
-            self.SetAnimation(_bone: handwearNodes)
-            self.SetAnimation(_bone: headNode)
+
             
             LoopAllMesh(_bone: bodyPoint, completionHandler:  {
                 node in
@@ -660,17 +656,31 @@ class AvatarLoaderBase
                     node.firstMaterial = BodyMaterial.shared.bodyMaterial
                 }
             })
-        }
-        catch
-        {
-            ApiEvents.shared.ShowPopupMessage(message: "Model Data is not encrypted")
-            ApiEvents.shared.HideLoading()
-            return
-        }
+       
         closure()
+   
+      
         CheckMissingAfterModelLoad(modelData: modelData);
     }
-    
+
+    func RemoveBodyPoint(name:String){
+        var index = -1
+        if(bodyPoints.count > 0)
+        {
+            for i in 0..<(bodyPoints.count)
+            {
+                if(bodyPoints[i].name == name)
+                {
+                    index = i;
+                }
+            }
+        }
+        if(index > -1)
+        {
+            bodyPoints[index].removeFromParentNode()
+            bodyPoints.remove(at: index)
+        }
+    }
     //Thos method reset blendshape of perticular name
     func ResetPerticaulerBlendshape(names:String)
     {
@@ -705,6 +715,39 @@ class AvatarLoaderBase
         }
     }
     
+    func EyeBlinkers()
+    {
+        var time: Float = 0.0
+        for childNode in headNode.childNodes
+        {
+            for layer2 in childNode.childNodes
+            {
+                if layer2.name == "head_generic"
+                {
+                    for layer3 in layer2.childNodes
+                    {
+                        for i in 0..<(layer3.morpher?.targets.count ?? 0)
+                        {
+                            // Get the blend shape target
+                            let blendShapeName = layer3.morpher?.targets[i].name ?? ""
+                            if blendShapeName.contains("EyeClosed")
+                            {
+                                
+                                // Calculate the blink weight based on time
+                                // This will create a smooth blink effect
+                                let blinkSpeed: Float = 2 // Adjust the blink speed as desired
+                                let blinkWeight = (sin(time * blinkSpeed) + 1.0) / 2.0
+
+                                // Set the weight of the blend shape target
+                                layer3.morpher?.setWeight(CGFloat(blinkWeight), forTargetAt: i)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     // Clear economy item data
     func EmptyEconomy()-> GetEconomyItemsResultDataInner{
         return  GetEconomyItemsResultDataInner(templateID: "", itemGender: 0, itemCategory: "", itemSubCategory: "", displayName: "", description: "", virtualCurrency: "", realCurrency: 0, tags: "", entitlement: "", isStackable: 0, isLimitedEdition: 0, limitedEditionIntialCount: 0, customMetaData: "", style: "", itemThumbnailsUrl: "", artifacts: "", blendshapeKeys: "", itemSkin: "", status: 0, ID: "", config: "", coreBucket: "", conflictingBuckets: "")
@@ -727,7 +770,9 @@ class AvatarLoaderBase
                             {
                                 layer3.childNodes.map
                                 {
-                                    facialHairMorpher.setWeight( ($0.morpher?.weight(forTargetNamed:  ($0.morpher?.targets[0].name)!))!, forTargetNamed:  ($0.morpher?.targets[0].name)!)
+                                    if(facialHairMorpher != nil){
+                                        facialHairMorpher.setWeight( ($0.morpher?.weight(forTargetNamed:  ($0.morpher?.targets[0].name)!))!, forTargetNamed:  ($0.morpher?.targets[0].name)!)
+                                    }
                                 }
                             }
                         }
@@ -787,7 +832,7 @@ class AvatarLoaderBase
             {
                 return
             }
-            //   ApiEvents.shared.HideProgressLoading()
+            ApiEvents.shared.HideProgressLoading()
             completionHandler(data)
         }
         observation = task.progress.observe(\.fractionCompleted) { progress, _ in
@@ -830,7 +875,7 @@ class AvatarLoaderBase
             }
             if ((_bone.name) != nil)
             {
-                if(_bone.name == "mixamorig:Head")
+                if(_bone.name == "Head")
                 {
                     for items in vertexData
                     {
@@ -888,14 +933,14 @@ class AvatarLoaderBase
     private func LoadAllDefaultModel()
     {
         var modeldataList : [ModelData] = []
-        var gender = "1"
+        var gender = "0"
         if(GetGender() == Gender.Male)
         {
-            gender = "1"
+            gender = "0"
         }
         if(GetGender() == Gender.Female)
         {
-            gender = "2"
+            gender = "1"
         }
         if(ProjectSettings.shared.isDebug)
         {
@@ -915,15 +960,17 @@ class AvatarLoaderBase
     private func LoadAllDefaulModel_Start(completionHandler: @escaping () -> Void)
     {
         var modeldataList : [ModelData] = []
-        var gender = "1"
+        var gender = "0"
         if(GetGender() == Gender.Male)
         {
-            gender = "1"
+            gender = "0"
         }
         if(GetGender() == Gender.Female)
         {
-            gender = "2"
-            //            DataHolder.shared.defaultModelFromNetwork = true
+            gender = "1"
+#if AVATARYUG_DEMO
+            DataHolder.shared.defaultModelFromNetwork = true
+            #endif
         }
         modeldataList = DefaultAvatarData.shared.GetDefaultModelList(gender: gender);
         for i in 0...modeldataList.count-1 {
@@ -936,19 +983,37 @@ class AvatarLoaderBase
     {
         if(defaultModelList.count>0)
         {
-            //ApiEvents.shared.ShowLoading()
-            LoadModelData(urlstr:defaultModelList[0].GlbPath!, completionHandler:
-                            {
-                (data) in
-                let sceneSource = GLTFSceneSource(data: data)
+            ApiEvents.shared.ShowLoading()
+            
+            guard let assetURL = Bundle.main.url(forResource: defaultModelList[0].GlbPathOffline,     withExtension: "glb" )
+            else {
+                        print("Failed to find asset for URL")
+                        return
+            }
+            
+            GLTFAsset.load(with: assetURL, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
                 self.AddDefaultBodyPart(model:sceneSource,modelData: self.defaultModelList[0],completionHandler: {
-                    self.defaultModelList.remove(at: 0)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.defaultModelList.remove(at: 0)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         ApiEvents.shared.HideLoading()
                         self.LoadDefaultModel_start(completionHandler: completionHandler)
                     }
                 })
-            })
+            }
+                
+//            LoadModelData(urlstr:defaultModelList[0].GlbPath, completionHandler:
+//                            {
+//                (data) in
+//                let sceneSource = GLTFSceneSource(data: data)
+//                self.AddDefaultBodyPart(model:sceneSource,modelData: self.defaultModelList[0],completionHandler: {
+//                    self.defaultModelList.remove(at: 0)
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+//                        ApiEvents.shared.HideLoading()
+//                        self.LoadDefaultModel_start(completionHandler: completionHandler)
+//                    }
+//                })
+//            })
         }
         else
         {
@@ -958,7 +1023,7 @@ class AvatarLoaderBase
     
     //This method Set face blendshape
     //Set single blendshape value
-    private  func SetBlenshape(names:String,value: Float)
+    public  func SetBlenshape(names:String,value: Float)
     {
         
         for childNoade in headNode.childNodes
@@ -987,8 +1052,31 @@ class AvatarLoaderBase
         GetVertex()
     }
     
+    public func GetBlendshapeValue(names:String)-> Float
+    {
+        var value :CGFloat = 0.0
+        for childNoade in headNode.childNodes
+        {
+            for layer2 in childNoade.childNodes
+            {
+                if(layer2.name! == "head_generic" )
+                {
+                    for layer3 in layer2.childNodes
+                    {
+                        layer3.childNodes.map
+                        {
+                            value = ($0.morpher?.weight(forTargetNamed: names))!
+                        }
+                    }
+                }
+            }
+        }
+        return Float(value)
+    }
+
+    
     // This method set expression on face for different look
-    private func SetExpression(names:String,value: Float)
+     func SetExpression(names:String,value: Float)
     {
         if(headmorpherModel != nil)
         {
@@ -1006,6 +1094,7 @@ class AvatarLoaderBase
         {
             facialHairMorpher.setWeight(CGFloat(value), forTargetNamed: names)
         }
+     
         for childNoade in headNode.childNodes
         {
             for layer2 in childNoade.childNodes
@@ -1014,15 +1103,21 @@ class AvatarLoaderBase
                 {
                     for layer3 in layer2.childNodes
                     {
-                        layer3.childNodes.map
+                        layer3.morpher?.setWeight(CGFloat(value), forTargetNamed: names + "1")
+                        layer3.morpher?.calculationMode = .additive
+                        for layer4 in layer3.childNodes
                         {
-                            if(ProjectSettings.shared.isDebug)
-                            {
-                                // print("TArgeted Blendshapes----",names)
-                            }
-                            $0.morpher?.setWeight(CGFloat(value), forTargetNamed: names + "1")
-                            $0.morpher?.calculationMode = .additive
+                            layer4.morpher?.setWeight(CGFloat(value), forTargetNamed: names + "1")
+                            layer4.morpher?.calculationMode = .additive
                         }
+                       
+//                        print(layer3)
+//                        layer3.childNodes.map
+//                        {
+//
+//                            $0.morpher?.setWeight(CGFloat(value), forTargetNamed: names + "1")
+//                            $0.morpher?.calculationMode = .additive
+//                        }
                     }
                 }
             }
@@ -1033,8 +1128,10 @@ class AvatarLoaderBase
     func ResetToDefault()
     {
         ApiEvents.shared.ShowLoading()
-        //DataHolder.shared.currentSelectedBodyParts = []
-        //DataHolder.shared.itemsTobuy  = []
+#if AVATARYUG_DEMO
+        DataHolder.shared.currentSelectedBodyParts = []
+        DataHolder.shared.itemsTobuy  = []
+        #endif
         currentSelectedTop = nil
         currentSelectedBottom = nil
         currentSelectedOutfit = nil
@@ -1074,8 +1171,7 @@ class AvatarLoaderBase
             }
         }
         BodyMaterial.shared.clearTattooTexture()
-        BodyMaterial.shared.RemoveBodyColor()
-        HeadMaterial.shared.RemoveBodyColor()
+
         HeadMaterial.shared.RemoveTattooTexture()
         HeadMaterial.shared.RemoveHeadHairTex()
         HeadMaterial.shared.RemoveHairColor()
@@ -1086,11 +1182,13 @@ class AvatarLoaderBase
         HeadMaterial.shared.RemoveLipTex()
         HeadMaterial.shared.RemoveLipColor()
         EyeballMaterial.shared.RemoveEyeballTex()
-        BodyMaterial.shared.ResetSkinTonetexture()
+        BodyMaterial.shared.RemoveSkinTonetexture()
         HeadMaterial.shared.RemoveSkinTonetexture()
         FacialhairMaterial.shared.RemoveFacialhaiColor()
         HairMaterial.shared.RemovehaiColor()
-        //    CurrentSelectedAvatarDetail.shared.ChangedAvatarColor = UserDetailHolder.shared.userDetail.currentUserSelectedAvatar.avatardata.ColorMeta
+#if AVATARYUG_DEMO
+        CurrentSelectedAvatarDetail.shared.ChangedAvatarColor = UserDetailHolder.shared.userDetail.currentUserSelectedAvatar.avatardata.ColorMeta
+        #endif
         for childNoade in headNode.childNodes
         {
             for layer2 in childNoade.childNodes
@@ -1111,25 +1209,23 @@ class AvatarLoaderBase
             }
         }
         LoadAllDefaultModel(OnComplete:
-                            {
-            
-            
+        {
+            ApiEvents.shared.OnItemSelectUpdate()
             ApiEvents.shared.HideLoading()
- 
         })
     }
     
     public func LoadAllDefaultModel(OnComplete:@escaping () -> Void)
     {
         var modeldataList : [ModelData] = []
-        var gender = "1"
+        var gender = "0"
         if(GetGender() == Gender.Male)
         {
-            gender = "1"
+            gender = "0"
         }
         if(GetGender() == Gender.Female)
         {
-            gender = "2"
+            gender = "1"
         }
         modeldataList = DefaultAvatarData.shared.GetDefaultModelList(gender: gender);
         for i in 0...modeldataList.count-1
@@ -1149,33 +1245,39 @@ class AvatarLoaderBase
         }
         else
         {
+
             OnComplete()
         }
     }
     
     func DownloadDefaultModel(defaultModel: ModelData,OnComplete:@escaping () -> Void)
     {
-        LoadModelData(urlstr:defaultModel.GlbPath!, completionHandler:
-        {
-            (data) in
-            let sceneSource = GLTFSceneSource(data: data)
+        guard let assetURL = Bundle.main.url(forResource: defaultModel.GlbPathOffline,withExtension: "glb")
+        else {
+            print("Failed to find asset for URL")
+            return
+        }
+
+        GLTFAsset.load(with: assetURL, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+            let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
             self.AddDefaultBodyPart(model:sceneSource,modelData: defaultModel,completionHandler:
-                                        {
+            {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3)
                 {
                     self.OnQueueDefaultModel(OnComplete: OnComplete)
                 }
             })
-        })
+        }
     }
     
     //This method reset to current selected model
     func ResetToCurrentSelectedModel()
     {
-        
-        //DataHolder.shared.currentSelectedBodyParts = []
-        //DataHolder.shared.itemsTobuy  = []
-        //CurrentSelectedAvatarDetail.shared.ChangedAvatarColor = UserDetailHolder.shared.userDetail.currentUserSelectedAvatar.avatardata.ColorMeta
+#if AVATARYUG_DEMO
+        DataHolder.shared.currentSelectedBodyParts = []
+        DataHolder.shared.itemsTobuy  = []
+        CurrentSelectedAvatarDetail.shared.ChangedAvatarColor = UserDetailHolder.shared.userDetail.currentUserSelectedAvatar.avatardata.ColorMeta
+        #endif
         ApiEvents.shared.ShowLoading()
         currentSelectedTop = nil
         currentSelectedBottom = nil
@@ -1216,8 +1318,7 @@ class AvatarLoaderBase
             }
         }
         BodyMaterial.shared.clearTattooTexture()
-        BodyMaterial.shared.RemoveBodyColor()
-        HeadMaterial.shared.RemoveBodyColor()
+ 
         HeadMaterial.shared.RemoveTattooTexture()
         HeadMaterial.shared.RemoveHeadHairTex()
         HeadMaterial.shared.RemoveHairColor()
@@ -1228,7 +1329,7 @@ class AvatarLoaderBase
         HeadMaterial.shared.RemoveLipTex()
         HeadMaterial.shared.RemoveLipColor()
         EyeballMaterial.shared.RemoveEyeballTex()
-        BodyMaterial.shared.ResetSkinTonetexture()
+        BodyMaterial.shared.RemoveSkinTonetexture()
         HeadMaterial.shared.RemoveSkinTonetexture()
         FacialhairMaterial.shared.RemoveFacialhaiColor()
         HairMaterial.shared.RemovehaiColor()
@@ -1242,7 +1343,7 @@ class AvatarLoaderBase
         HeadMaterial.shared.RemoveLipTex()
         HeadMaterial.shared.RemoveLipColor()
         EyeballMaterial.shared.RemoveEyeballTex()
-        BodyMaterial.shared.ResetSkinTonetexture()
+        BodyMaterial.shared.RemoveSkinTonetexture()
         HeadMaterial.shared.RemoveSkinTonetexture()
         FacialhairMaterial.shared.RemoveFacialhaiColor()
         HairMaterial.shared.RemovehaiColor()
@@ -1268,33 +1369,31 @@ class AvatarLoaderBase
             }
         }
         LoadAllDefaultModel(OnComplete:
+        {
+#if AVATARYUG_DEMO
+            let modelList = UserDetailHolder.shared.userDetail.currentUserSelectedAvatar.avatardata.BucketData
+            var id : [String] = []
+            for item in modelList
+            {
+                id.append(item.ID)
+            }
+                        if(id.count > 0)
+                        {
+                            for item in id
                             {
-            
-//                        let modelList = UserDetailHolder.shared.userDetail.currentUserSelectedAvatar.avatardata.BucketData
-//                        var id : [String] = []
-//                        for item in modelList
-//                        {
-//                            if(!DataHolder.shared.IsItemPresentInCurrentSelected(ID:  item.ID))
-//                            {
-//                                id.append(item.ID)
-//                            }
-//                        }
-//                        if(id.count > 0)
-//                        {
-//                            for item in id
-//                            {
-//                                let modeldata =  EconomyItemHolder.shared.EconomyItems.first(where:  { $0.ID == item })
-//                                if(modeldata != nil)
-//                                {
-//                                    self.netwrokModelList.append(modeldata!)
-//                                }
-//                            }
-//                        }
-//                        else
-//                        {
-//                            ApiEvents.shared.HideLoading()
-//                        }
+                                let modeldata =  EconomyItemHolder.shared.EconomyItems.first(where:  { $0.ID == item })
+                                if(modeldata != nil)
+                                {
+                                    self.networkModelQueueList.append(modeldata!)
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ApiEvents.shared.HideLoading()
+                        }
             self.OnQueueNetworkModel()
+            #endif
             
         })
     }
@@ -1348,7 +1447,7 @@ class AvatarLoaderBase
                                 
                                 for verts in facevertexlist
                                 {
-                                    verts.Point.worldPosition = verteslist[verts.VertexNo]
+                                    verts.Point.worldPosition = VertexList[verts.VertexNo]
                                 }
                             }
                             
@@ -1359,22 +1458,9 @@ class AvatarLoaderBase
         }
         
     }
+
     
-    //This method extract animation from glb model
-    func LoadAnimationFromBone(_bone :SCNNode!)
-    {
-        if(!_bone.isEqual(nil))
-        {
-            boneAnimationList.append(_bone)
-        }
-        if(_bone.childNodes.count>0)
-        {
-            for i in 0..._bone.childNodes.count-1
-            {
-                LoadAnimationFromBone(_bone: _bone.childNodes[i]);
-            }
-        }
-    }
+   
     
     func LoopAllNodes(_bone :SCNNode!,completionHandler: @escaping (SCNNode) -> Void)
     {
@@ -1393,7 +1479,26 @@ class AvatarLoaderBase
             }
         }
     }
-    
+    func LoopAllMixamoNodes(_bone :SCNNode!,completionHandler: @escaping (SCNNode) -> Void)
+    {
+        if(!_bone.isEqual(nil))
+        {
+            if _bone.name != nil{
+                if((_bone.name?.contains("mixamorig:")) != nil)
+                {
+                    _bone.name = _bone.name!.replacingOccurrences(of: "mixamorig:", with: "")
+                }
+                completionHandler(_bone)
+            }
+        }
+        if(_bone.childNodes.count>0)
+        {
+            for i in 0..._bone.childNodes.count-1
+            {
+                LoopAllMixamoNodes(_bone: _bone.childNodes[i],completionHandler:completionHandler);
+            }
+        }
+    }
     
     
     
@@ -1431,62 +1536,61 @@ class AvatarLoaderBase
         }
     }
     
-    
+    private var clipAnimations = [GLTFSCNAnimation]()
     // This method add animation clip
     public func SetClips(clip : AvatarClip,completionHandler: @escaping () -> Void)
     {
         if(clip.artifacts.count>0)
         {
             ApiEvents.shared.ShowLoading()
-            LoadModelData(urlstr: clip.artifacts[0].mesh_url, completionHandler:
-                            {
-                data in
-                self.RemoveClip()
-                let sceneSource = GLTFSceneSource(data: data)
-                let scene = try! sceneSource.scene()
-                self.clipBones = []
-                self.GetBones(_bone: scene.rootNode.childNodes[0])
-                self.modelBone = []
-                self.GetSceneBone(_bone: self.CustomizeModelParent)
-                for mBone in self.modelBone
+            let artifact = clip.artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+            if(artifact != nil)
+            {
+                LoadModelData(urlstr: (artifact?.url!)!, completionHandler:
                 {
-                    mBone.removeAllAnimations()
-                }
-                for i in 0...self.clipBones.count-1
-                {
-                    for mBone in  self.modelBone
-                    {
-                        if(mBone.name == self.clipBones[i].name)
-                        {
-                            if(self.clipBones[i].animationPlayer(forKey: "rotation") != nil){
-                                mBone.addAnimationPlayer(self.clipBones[i].animationPlayer(forKey: "rotation")!,  forKey: "rotation")
-                                mBone.animationPlayer(forKey:"rotation")?.stop()
-                            }
-                            if(self.clipBones[i].animationPlayer(forKey: "translation") != nil){
-                                mBone.addAnimationPlayer(self.clipBones[i].animationPlayer(forKey: "translation")!,  forKey: "translation")
-                                mBone.animationPlayer(forKey:"translation")?.stop()
-                            }
-                                                        if(mBone.animationPlayer(forKey: "scale") != nil){
-                                                            mBone.addAnimationPlayer(self.clipBones[i].animationPlayer(forKey: "scale")!,  forKey: "scale")
-                                                        }
-                        }
+                    data in
+                    GLTFAsset.load(with: data, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                        DispatchQueue.main.async {
+                                       if status == .complete {
+                                           let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+                                           self.RemoveClip()
+                                           self.clipAnimations = sceneSource.animations
+                                           if let defaultAnimation = self.clipAnimations.first {
+                                               defaultAnimation.animationPlayer.animation.usesSceneTimeBase = false
+                                               defaultAnimation.animationPlayer.animation.repeatCount = .greatestFiniteMagnitude
+                                               if(self.topNodes != nil){
+                                                   self.topNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+                                               }
+                                               if(self.bottomNodes != nil){
+                                                   self.bottomNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+                                               }
+                                               if(self.handwearNodes != nil){
+                                                   self.handwearNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+                                               }
+                                               if(self.footwearNodes != nil){
+                                                   self.footwearNodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+                                               }
+                                               if(self.outfitnodes != nil){
+                                                   self.outfitnodes.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+                                               }
+                                               if(self.headNode != nil){
+                                                   self.headNode.childNodes[0].addAnimationPlayer(defaultAnimation.animationPlayer, forKey: nil)
+                                               }
+                                               defaultAnimation.animationPlayer.play()
+                                           }
+                                           self.GetVertex()
+                                       }
+                                   }
+                        
+                        
                     }
-                }
-                for mBone in  self.modelBone
-                {
-                    if(mBone.animationPlayer(forKey: "rotation") != nil)
-                    {
-                        mBone.animationPlayer(forKey:"rotation")?.play()
-                    }
-                    if(mBone.animationPlayer(forKey: "translation") != nil)
-                    {
-                        mBone.animationPlayer(forKey:"translation")?.play()
-                    }
-                }
-                self.GetVertex()
+                    completionHandler()
+                })
+            }
+            else
+            {
                 ApiEvents.shared.HideLoading()
-                completionHandler()
-            })
+            }
         }
     }
     
@@ -1498,30 +1602,41 @@ class AvatarLoaderBase
             networkModelQueueList.remove(at: 0)
             DownloadNetworkModel(modelData: modeldta)
         } else {
-            isClicked = false
+
             ApiEvents.shared.HideLoading()
         }
     }
 
     
     // This method Check Item Category based on category Call different method to load model
-    private func DownloadNetworkModel(modelData: GetEconomyItemsResultDataInner) {
-        if AvataryugData.shared.IsBodyPartCategory(category: modelData.itemCategory)! {
+    private func DownloadNetworkModel(modelData: GetEconomyItemsResultDataInner)
+    {
+        if AvataryugData.shared.IsBodyPartCategory(category: modelData.itemCategory)!
+        {
             LoadBodyPart(modelData: modelData)
-        } else if AvataryugData.shared.IsBodywearCategory(category: modelData.itemCategory)! {
+        }
+        else if AvataryugData.shared.IsBodywearCategory(category: modelData.itemCategory)!
+        {
             LoadBodywearPart(modelData: modelData)
-        } else if AvataryugData.shared.IsBodyTattoCategory(category: modelData.itemCategory)! {
+        }
+        else if AvataryugData.shared.IsBodyTattoCategory(category: modelData.itemCategory)!
+        {
             DownloadTattoos(modelData: modelData)
-        } else if AvataryugData.shared.IsHeadFaceWearCategory3D(category: modelData.itemCategory)! {
+        }
+        else if AvataryugData.shared.IsHeadFaceWearCategory3D(category: modelData.itemCategory)!
+        {
             LoadHeadFaceWearCategory3D(modelData: modelData)
-        } else if AvataryugData.shared.IsHeadFaceWearCategory2D(category: modelData.itemCategory)! {
+        }
+        else if AvataryugData.shared.IsHeadFaceWearCategory2D(category: modelData.itemCategory)!
+        {
             LoadFaceWearCategory2D(modelData: modelData)
-        } else if AvataryugData.shared.IsBlendshapeCategory(category: modelData.itemCategory)! {
+        }
+        else if AvataryugData.shared.IsBlendshapeCategory(category: modelData.itemCategory)!
+        {
             LoadBlendshape(modelData: modelData)
         }
     }
 
-    
     // This method return bucket name from core bucket
     private func GetBucketName(coreBucket: String) -> String {
         var bucketName = ""
@@ -1550,21 +1665,31 @@ class AvatarLoaderBase
                         completionHandler: {
                             isPresent in
                             isModelPresent = isPresent
-                            //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                            DataHolder.shared.RemovePart(economyItem: modelData)
+                            #endif
                             self.currentSelectedTop = nil
                             self.CheckMissingModelAfterRemovingSameModel(modelData: modelData)
                         })
                 } else {
-                    //DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+                    #endif
                     currentSelectedTop = modelData
                     currentSelectedOutfit = nil
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                 }
             } else {
-                //DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+#if AVATARYUG_DEMO
+                DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+                #endif
                 currentSelectedTop = modelData
                 currentSelectedOutfit = nil
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
             }
         }
 
@@ -1576,21 +1701,29 @@ class AvatarLoaderBase
                         completionHandler: {
                             isPresent in
                             isModelPresent = isPresent
-                            //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                            DataHolder.shared.RemovePart(economyItem: modelData)
+                            #endif
                             self.currentSelectedBottom = nil
                             self.CheckMissingModelAfterRemovingSameModel(modelData: modelData)
                         })
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                    //DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+                    #endif
                     currentSelectedBottom = modelData
                     currentSelectedOutfit = nil
                 }
             } else {
-                //DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+#if AVATARYUG_DEMO
+                DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+                #endif
                 currentSelectedBottom = modelData
                 currentSelectedOutfit = nil
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
             }
         }
         if modelData.itemCategory == Category.Outfit.rawValue {
@@ -1601,28 +1734,37 @@ class AvatarLoaderBase
                         completionHandler: {
                             isPresent in
                             isModelPresent = isPresent
-                            //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                            DataHolder.shared.RemovePart(economyItem: modelData)
+                            #endif
                             self.currentSelectedOutfit = nil
                             self.CheckMissingModelAfterRemovingSameModel(modelData: modelData)
                         })
                 } else {
-                    //DataHolder.shared.RemovePart(category:  Category.Top.rawValue)
-                    //DataHolder.shared.RemovePart(category:  Category.Bottom.rawValue)
-                    //DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(category:  Category.Top.rawValue)
+                    DataHolder.shared.RemovePart(category:  Category.Bottom.rawValue)
+                    DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+                    #endif
                     currentSelectedOutfit = modelData
                     currentSelectedBottom = nil
                     currentSelectedTop = nil
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                 }
             } else {
-
-                //DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
-                //DataHolder.shared.RemovePart(category:  Category.Top.rawValue)
-                //DataHolder.shared.RemovePart(category:  Category.Bottom.rawValue)
+#if AVATARYUG_DEMO
+                DataHolder.shared.RemovePart(category:  Category.Outfit.rawValue)
+                DataHolder.shared.RemovePart(category:  Category.Top.rawValue)
+                DataHolder.shared.RemovePart(category:  Category.Bottom.rawValue)
+                #endif
                 currentSelectedOutfit = modelData
                 currentSelectedBottom = nil
                 currentSelectedTop = nil
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
             }
         }
 
@@ -1634,17 +1776,22 @@ class AvatarLoaderBase
                         completionHandler: {
                             isPresent in
                             isModelPresent = isPresent
-                            //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                            DataHolder.shared.RemovePart(economyItem: modelData)
+                            #endif
                             self.currentSelectedFootwear = nil
                             self.CheckMissingModelAfterRemovingSameModel(modelData: modelData)
                         })
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                     currentSelectedFootwear = modelData
                 }
             } else {
-
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
                 currentSelectedFootwear = modelData
             }
         }
@@ -1657,17 +1804,23 @@ class AvatarLoaderBase
                         completionHandler: {
                             isPresent in
                             isModelPresent = isPresent
-                            //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                            DataHolder.shared.RemovePart(economyItem: modelData)
+                            #endif
                             self.currentSelectedHandwear = nil
                             self.CheckMissingModelAfterRemovingSameModel(modelData: modelData)
                         })
                 } else {
                     currentSelectedHandwear = modelData
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                 }
             } else {
                 currentSelectedHandwear = modelData
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
             }
         }
 
@@ -1679,32 +1832,55 @@ class AvatarLoaderBase
                 if(artifacts.count > 0)
                 {
                     let artifact = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
+                    
                     if(artifact != nil)
                     {
-                        LoadModelData(
-                            urlstr: (artifact?.url!)!,
-                            completionHandler: {
-                                (data) in
-                                ModelDecryptionHandler.shared.GetModelData(
-                                    data: data,
-                                    completionHandler: {
-                                        decdata in
-                                        let sceneSource = GLTFSceneSource(data: decdata)
-                                        //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                                        self.AddNetworkBodyPart(
-                                            model: sceneSource, modelData: modelData,
-                                            closure: {
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                                    ApiEvents.shared.HideLoading()
-                                                    self.OnQueueNetworkModel()
-                                                }
-                                            })
+                        if(artifact?.url != nil)
+                        {
+                            LoadModelData( urlstr: (artifact?.url!)!, completionHandler: {(data) in
+                                    ModelDecryptionHandler.shared.GetModelData(data: data, completionHandler: {decdata in
+                                        GLTFAsset.load(with: decdata, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                                            if let error = maybeError {
+                                                print("Failed to load glTF asset: \(error)")
+                                            }
+                                            else
+                                            {
+                                                let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+#if AVATARYUG_DEMO
+                                                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                                #endif
+                                                self.AddNetworkBodyPart(model: sceneSource, modelData: modelData, closure: {
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                                        ApiEvents.shared.HideLoading()
+                                                        self.OnQueueNetworkModel()
+                                                    }
+                                                })
+                                             }
+                                        }
                                     })
                             })
+                        }
+                        else
+                        {
+                            ApiEvents.shared.ShowPopupMessage(message: "Model url not available ")
+                            ApiEvents.shared.HideLoading()
+                            self.OnQueueNetworkModel()
+                        }
                     }
-           
-
+                    else
+                    {
+                        ApiEvents.shared.ShowPopupMessage(message: "Model data not available")
+                        ApiEvents.shared.HideLoading()
+                        self.OnQueueNetworkModel()
+                    }
                 }
+                else
+                {
+                    ApiEvents.shared.ShowPopupMessage(message: "Model data not available")
+                    ApiEvents.shared.HideLoading()
+                    self.OnQueueNetworkModel()
+                }
+             
             } catch {
                 if(ProjectSettings.shared.isDebug)
                 {
@@ -1734,20 +1910,26 @@ class AvatarLoaderBase
                                     {
                         isPresent in
                         isModelPresent = isPresent
-                        //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                        DataHolder.shared.RemovePart(economyItem: modelData)
+                        #endif
                         self.currentWristwearData = nil
                     })
                 }
                 else
                 {
                     currentWristwearData = modelData
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                 }
             }
             else
             {
                 currentWristwearData = modelData
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
             }
         }
         
@@ -1760,7 +1942,7 @@ class AvatarLoaderBase
                 artifacts = try JSONDecoder().decode([ThreeDArtifact].self, from: jsonData)
                 if(artifacts.count > 0)
                 {
-                    let artifact = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
+                    let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
                     if(artifact != nil)
                     {
                         LoadModelData(urlstr: (artifact?.url!)!, completionHandler:
@@ -1769,20 +1951,30 @@ class AvatarLoaderBase
                             ModelDecryptionHandler.shared.GetModelData(data: data,completionHandler:
                                                                         {
                                 decdata in
-                                let sceneSource = GLTFSceneSource(data: decdata)
-                                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                                self.AddNetworkBodywearPart(model: sceneSource, modelData: modelData, closure:
-                                                                {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
-                                    {
-                                        ApiEvents.shared.HideLoading()
-                                        self.OnQueueNetworkModel();
+#if AVATARYUG_DEMO
+                                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                #endif
+                                GLTFAsset.load(with: decdata, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                                    DispatchQueue.main.async {
+                                        let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+                                        self.AddNetworkBodywearPart(model: sceneSource, modelData: modelData, closure:
+                                        {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
+                                            {
+                                                ApiEvents.shared.HideLoading()
+                                                self.OnQueueNetworkModel();
+                                            }
+                                        })
                                     }
-                                })
+                                }
                             })
                         })
                     }
-               
+                    else
+                    {
+                        ApiEvents.shared.ShowPopupMessage(message: "Data not available")
+                        self.OnQueueNetworkModel();
+                    }
                 }
                 else
                 {
@@ -1792,14 +1984,18 @@ class AvatarLoaderBase
             }
             catch
             {
-                ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
+                ApiEvents.shared.ShowPopupMessage(message: "Artifacts are not available")
                 self.OnQueueNetworkModel();
             }
+        }
+        else
+        {
+            self.OnQueueNetworkModel();
         }
     }
     
     // This methos set loaded model in its proper bucket
-    func AddNetworkBodywearPart(model:GLTFSceneSource,modelData: GetEconomyItemsResultDataInner,closure:()->Void)
+    func AddNetworkBodywearPart(model:GLTFSCNSceneSource,modelData: GetEconomyItemsResultDataInner,closure:()->Void)
     {
         let bucketname = GetBucketName(coreBucket: modelData.coreBucket)
         var isPresent : Bool = false;
@@ -1816,22 +2012,7 @@ class AvatarLoaderBase
             }
         }
         let conflict = try? JSONDecoder().decode([Conflict].self, from: modelData.conflictingBuckets.data(using: .utf8)!)
-        if (bodyPoints.count > 0)
-        {
-            for item in bodyPoints
-            {
-                if(item.name == bucketname)
-                {
-                    if(item.childNodes.count > 0)
-                    {
-                        for child in item.childNodes
-                        {
-                            child.removeFromParentNode()
-                        }
-                    }
-                }
-            }
-        }
+        
         if(bodyPoints.count > 0)
         {
             for item in bodyPoints
@@ -1851,6 +2032,24 @@ class AvatarLoaderBase
                 }
             }
         }
+        
+        if (bodyPoints.count > 0)
+        {
+            for item in bodyPoints
+            {
+                if(item.name == bucketname)
+                {
+                    if(item.childNodes.count > 0)
+                    {
+                        for child in item.childNodes
+                        {
+                            child.removeFromParentNode()
+                        }
+                    }
+                }
+            }
+        }
+       
         
         if(!isPresent)
         {
@@ -1872,46 +2071,25 @@ class AvatarLoaderBase
             if(pointdetail != nil)
             {
                 let bonename =  pointdetail.BoneName
-                let bonePoint = headNode.childNode(withName:"mixamorig:"+bonename , recursively: true)
+                let bonePoint = headNode.childNode(withName:bonename , recursively: true)
                 bonePoint?.addChildNode(bodyPoint)
                 bodyPoint.position = pointdetail!.Position
                 bodyPoint.eulerAngles = pointdetail!.Rotation
             }
-            do
+         
+            let scene = model.defaultScene
+            for item in scene!.rootNode.childNodes
             {
-                let scene = try model.scene()
-                for item in scene.rootNode.childNodes
-                {
-                    bodyPoint.addChildNode(item)
-                }
-            }
-            catch
-            {
-                if(ProjectSettings.shared.isDebug)
-                {
-                    print("\(error.localizedDescription)")
-                }
-                return
+                bodyPoint.addChildNode(item)
             }
             closure()
         }
         else
         {
-            do
+            let scene = model.defaultScene
+            for item in scene!.rootNode.childNodes
             {
-                let scene = try model.scene()
-                for item in scene.rootNode.childNodes
-                {
-                    bodyPoint.addChildNode(item)
-                }
-            }
-            catch
-            {
-                if(ProjectSettings.shared.isDebug)
-                {
-                    print("\(error.localizedDescription)")
-                }
-                return
+                bodyPoint.addChildNode(item)
             }
             closure()
         }
@@ -1948,7 +2126,9 @@ class AvatarLoaderBase
         {
             if (isPresentLatstId)
             {
-                //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.RemovePart(economyItem: modelData)
+                #endif
                 lastLoadedTattoos.remove(at: tatooSameIDindex)
                 OnProcessModelTexture(closure: {
                     OnQueueNetworkModel();
@@ -1956,7 +2136,9 @@ class AvatarLoaderBase
             }
             else
             {
-                //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.RemovePart(economyItem: modelData)
+                #endif
                 lastLoadedTattoos.remove(at: tatooSameCatindex)
                 addNew = true
             }
@@ -1975,24 +2157,42 @@ class AvatarLoaderBase
                 let artifacts = try JSONDecoder().decode([TwoDArtifact].self, from: jsonData)
                 if(artifacts.count > 0)
                 {
-                    guard let url = URL(string:  artifacts[0].link! )else{
-                        return
-                    }
-                    let getDataTask = URLSession.shared.dataTask(with: url, completionHandler: { data, _, error in
-                        guard let data = data ,  error == nil else {
+                    let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+                    if(artifact != nil)
+                    {
+                        guard let url = URL(string:  (artifact?.url!)! )else{
                             return
                         }
-                        self.lastLoadedTattoos.append( LoadedTattoo(ItemCategory: modelData.itemCategory, tattooTex: data, tattooid: modelData.ID))
-                        
-                        self.OnProcessModelTexture(closure: {
-                            //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                ApiEvents.shared.HideLoading()
-                                self.OnQueueNetworkModel();
+                        let getDataTask = URLSession.shared.dataTask(with: url, completionHandler: { data, _, error in
+                            guard let data = data ,  error == nil else {
+                                return
                             }
+                            
+                            if let image = UIImage(data: data) {
+                                self.lastLoadedTattoos.append( LoadedTattoo(ItemCategory: modelData.itemCategory, tattooTex: data, tattooid: modelData.ID))
+                                
+                                self.OnProcessModelTexture(closure: {
+#if AVATARYUG_DEMO
+                                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                    #endif
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        ApiEvents.shared.HideLoading()
+                                        self.OnQueueNetworkModel();
+                                    }
+                                })
+                                   } else {
+                                       ApiEvents.shared.ShowPopupMessage(message: "data not available")
+                                       self.OnQueueNetworkModel();
+                                   }
+                            
+                     
                         })
-                    })
-                    getDataTask.resume()
+                        getDataTask.resume()
+                    }
+                    else
+                    {
+                        self.OnQueueNetworkModel();
+                    }
                 }
                 else
                 {
@@ -2031,7 +2231,7 @@ class AvatarLoaderBase
     private func LoadHeadFaceWearCategory3D(modelData : GetEconomyItemsResultDataInner)
     {
         GetVertex()
-        Category.Eyebrowswear.rawValue
+     
         if(modelData.itemCategory ==  Category.Eyewear.rawValue || modelData.itemCategory == Category.Mouthwear.rawValue || modelData.itemCategory == Category.Earwear.rawValue || modelData.itemCategory == Category.Eyebrowswear.rawValue ||
            modelData.itemCategory == Category.Facewear.rawValue || modelData.itemCategory == Category.Neckwear.rawValue || modelData.itemCategory == Category.Nosewear.rawValue)
         {
@@ -2094,9 +2294,10 @@ class AvatarLoaderBase
                 if(nodename.contains(modelData.ID))
                 {
                     isSameModelPresent = true
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
-                    isClicked = false
-                    
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+    
+                    #endif
                     for item in currentNodePoint.childNodes
                     {
                         item.removeFromParentNode()
@@ -2155,30 +2356,29 @@ class AvatarLoaderBase
                         let artifacts = try JSONDecoder().decode([ThreeDArtifact].self, from: jsonData)
                         ApiEvents.shared.ShowLoading()
                         
-                        if(artifacts.count > 0)
+                        let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+                        if(artifact != nil)
                         {
-                            let artifact = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
-                            
-                            if(artifact != nil)
-                            {
-                                self.LoadModelData(urlstr: (artifact?.url!)!, completionHandler:
-                                                    {
-                                    data in
-                                    ModelDecryptionHandler.shared.GetModelData(data: data, completionHandler:
-                                                                                {
-                                        decdata in
-                                        do
-                                        {
-                                            let sceneSource = GLTFSceneSource(data: decdata)
-                                            let scene = try sceneSource.scene()
+                            self.LoadModelData(urlstr: (artifact?.url!)!, completionHandler:
+                                                {
+                                data in
+                                ModelDecryptionHandler.shared.GetModelData(data: data, completionHandler:
+                                    {
+                                    decdata in
+                                        GLTFAsset.load(with: decdata, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                                            let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+                                            let scene = sceneSource.defaultScene
                                             let tempnode = SCNNode()
                                             tempnode.name = bucketname + "+" + modelData.ID
-                                            for meshdata  in scene.rootNode.childNodes
+                                            for meshdata  in scene!.rootNode.childNodes
                                             {
                                                 tempnode.addChildNode(meshdata)
                                                 meshdata.position = SCNVector3(0,0,0)
                                                 meshdata.eulerAngles = SCNVector3(0,0,0)
                                             }
+#if AVATARYUG_DEMO
+                                            DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                            #endif
                                             if(currentNodePoint != nil)
                                             {
                                                 if(currentNodePoint.childNodes.count > 0 )
@@ -2235,31 +2435,24 @@ class AvatarLoaderBase
                                             }
                                             else
                                             {
-                                                self.isClicked = false;
+                                                
                                                 ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
                                                 self.OnQueueNetworkModel();
                                             }
                                         }
-                                        catch
-                                        {
-                                            self.isClicked = false;
-                                            ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
-                                            self.OnQueueNetworkModel();
-                                        }
-                                    })
+                                 
                                 })
-                            }
-                            
-                        
+                            })
+                        }else
+                        {
+                            ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+                            self.OnQueueNetworkModel();
                         }
-                       
-                        
-                  
                     }
                     catch
                     {
-                        self.isClicked = false;
-                        ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
+
+                        ApiEvents.shared.ShowPopupMessage(message: "Artifacts are not available")
                         self.OnQueueNetworkModel();
                     }
                 }
@@ -2286,32 +2479,53 @@ class AvatarLoaderBase
         for verts in facevertexlist {
             verts.Point.worldPosition = verteslist[verts.VertexNo]
         }
+   
         for vertP in facevertexlist {
             if vertP.Point.name == bucketname {
                 currentNodePoint = vertP.Point
                 break
             }
         }
+        var addNew:Bool = true
 
-        if currentNodePoint.childNodes.count > 0 {
-            let nodename = currentNodePoint.childNodes[0].name!
-            if nodename.contains(modelData.ID) {
+        if(currentHairData != nil)
+        {
+            if(currentHairData.ID == modelData.ID)
+            {
                 isSameModelPresent = true
-                //   DataHolder.shared.RemovePart(economyItem: modelData)
-                isClicked = false
-                for item in currentNodePoint.childNodes {
-                    item.removeFromParentNode()
+                addNew = false
+                currentHairData  = nil
+                if currentNodePoint.childNodes.count > 0 {
+                    let nodename = currentNodePoint.childNodes[0].name!
+                    if nodename.contains(modelData.ID) {
+                        for item in currentNodePoint.childNodes {
+                            item.removeFromParentNode()
+                        }
+                    }
                 }
-                if hairModelNode != nil {
-                    hairModelNode.isHidden = false
-                }
-                HeadMaterial.shared.RemoveHeadHairTex()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    ApiEvents.shared.HideLoading()
-                    self.OnQueueNetworkModel()
-                }
+#if AVATARYUG_DEMO
+                DataHolder.shared.RemovePart(economyItem: modelData)
+                #endif
+            }
+            else
+            {
+                currentHairData = modelData
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
             }
         }
+        else
+        {
+            currentHairData = modelData
+#if AVATARYUG_DEMO
+            DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+            #endif
+        }
+       
+        HeadMaterial.shared.RemoveHeadHairTex()
+      
+       
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             if isSameModelPresent {
@@ -2319,7 +2533,7 @@ class AvatarLoaderBase
                     self.HeadCoreBuck = ""
                     self.ResetBlendshapes()
                 }
-                //DataHolder.shared.RemovePart(economyItem: modelData)
+                
             }
             if !isSameModelPresent {
                 let conflict = try? JSONDecoder().decode(
@@ -2341,154 +2555,207 @@ class AvatarLoaderBase
                     }
                 }
 
+                
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    if config?.isTwoD == 1 {
-                        let tempnode = SCNNode()
-                        tempnode.name = bucketname + "+" + modelData.ID
-                        if currentNodePoint.childNodes.count > 0 {
-                            for item in currentNodePoint.childNodes {
-                                item.removeFromParentNode()
-                            }
-                        }
-                        currentNodePoint.addChildNode(tempnode)
-                        tempnode.isHidden = true
-                        let imgsrc =
-                            "https://avataryug.b-cdn.net/files/diffuse/" + modelData.templateID + ".png"
-                        guard let url = URL(string: imgsrc) else { return }
-                        //ApiEvents.shared.ShowLoading()
-                        let task = URLSession.shared.dataTask(with: url) {
-                            (data, Urlresponse, error) in
-                            HeadMaterial.shared.SetHeadHairTex(texture: UIImage(data: data!)!)
-                            // DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                ApiEvents.shared.HideLoading()
-                                self.OnQueueNetworkModel()
-                            }
-                        }
-                        task.resume()
-                    } else {
-                        let jsonData = modelData.artifacts.data(using: .utf8)!
-                        do {
-                            let artifacts = try JSONDecoder().decode(
-                                [ThreeDArtifact].self, from: jsonData)
-                            //ApiEvents.shared.ShowLoading()
-                            if(artifacts.count > 0)
-                            {
-                                let artifact = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
+                    if(addNew)
+                    {
+                        if config?.isTwoD == 1 {
+                            let jsonData = modelData.artifacts.data(using: .utf8)!
+                            do {
+                                let artifacts = try JSONDecoder().decode(
+                                    [TwoDArtifact].self, from: jsonData)
+                                if(artifacts.count > 0){
+                                    ApiEvents.shared.ShowLoading()
+                                    
+                                    let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+                                    if( artifact != nil)
+                                    {
+                                        guard let url2 = URL(string: (artifact?.url!)!) else {
+                                            return
+                                        }
+                                        let getDataTask2 = URLSession.shared.dataTask(
+                                            with: url2,
+                                            completionHandler: { data, _, error in
+                                                guard let data = data, error == nil else {
+                                                    return
+                                                }
+                                                HeadMaterial.shared.SetHeadHairTex(texture: UIImage(data: data)!)
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                    ApiEvents.shared.HideLoading()
+                                                    self.OnQueueNetworkModel()
+                                                }
+                                            })
+                                        getDataTask2.resume()
+                                        
+                                    }
+                                    else
+                                    {
+                                        ApiEvents.shared.HideLoading()
+                                        self.OnQueueNetworkModel();
+                                    }
+                                    
+                                }
                                 
-                                if(artifact != nil)
+                            } catch {
+                                if(ProjectSettings.shared.isDebug)
                                 {
-                                    self.LoadModelData(urlstr: (artifact?.url!)!,completionHandler: {
+                                    print(error)
+                                }
+                                
+                                ApiEvents.shared.HideLoading()
+                                ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
+                            }
+                        } else {
+                            let jsonData = modelData.artifacts.data(using: .utf8)!
+                            do {
+                                let artifacts = try JSONDecoder().decode(
+                                    [ThreeDArtifact].self, from: jsonData)
+                                if(artifacts.count > 0){
+                                    ApiEvents.shared.ShowLoading()
+                                    
+                                    let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+                                    if( artifact != nil)
+                                    {
+                                        self.LoadModelData(   urlstr: (artifact?.url!)!,     completionHandler: {
                                             data in
-                                            ModelDecryptionHandler.shared.GetModelData(
-                                                data: data,
-                                                completionHandler: {
-                                                    decdata in
-                                                    do {
-                                                        let sceneSource = GLTFSceneSource(data: decdata)
-                                                        let scene = try sceneSource.scene()
-                                                        let tempnode = SCNNode()
-                                                        tempnode.name = bucketname + "+" + modelData.ID
-                                                        for meshdata in scene.rootNode.childNodes {
-                                                            tempnode.addChildNode(meshdata)
-                                                            meshdata.position = SCNVector3(0, 0, 0)
-                                                            meshdata.eulerAngles = SCNVector3(0, 0, 0)
+                                            ModelDecryptionHandler.shared.GetModelData( data: data, completionHandler: {
+                                                decdata in
+                                                
+                                                GLTFAsset.load(with: decdata, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                                                    let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+                                                    let scene =  sceneSource.defaultScene
+                                                    let tempnode = SCNNode()
+                                                    tempnode.name = bucketname + "+" + modelData.ID
+                                                    for meshdata in scene!.rootNode.childNodes {
+                                                        tempnode.addChildNode(meshdata)
+                                                        meshdata.position = SCNVector3(0, 0, 0)
+                                                        meshdata.eulerAngles = SCNVector3(0, 0, 0)
+                                                    }
+                                                    if currentNodePoint.childNodes.count > 0 {
+                                                        for item in currentNodePoint.childNodes {
+                                                            item.removeFromParentNode()
                                                         }
-                                                        if currentNodePoint.childNodes.count > 0 {
-                                                            for item in currentNodePoint.childNodes {
-                                                                item.removeFromParentNode()
+                                                    }
+                                                    currentNodePoint.addChildNode(tempnode)
+#if AVATARYUG_DEMO
+                                                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                                    #endif
+                                                    HeadMaterial.shared.RemoveHeadHairTex()
+                                                    GetMeshNode(
+                                                        _bone: tempnode,
+                                                        completionHandler: {
+                                                            node in
+                                                            node.geometry?.firstMaterial =                                       HairMaterial.shared.hairMaterial
+#if AVATARYUG_DEMO
+                                                            if(!CurrentSelectedAvatarDetail.shared.ChangedAvatarColor.HairColor.isEmpty){
+                                                                HairMaterial.shared.SethairColor(_color: UIColor(hex:   CurrentSelectedAvatarDetail.shared.ChangedAvatarColor.HairColor)!)
                                                             }
+                                                            #endif
+                                                        })
+                                                    tempnode.isHidden = false
+                                                    if self.headwearModelNode != nil {
+                                                        if(ProjectSettings.shared.isDebug)
+                                                        {
+                                                            print("THE Head Wear BUCKET---", self.HeadCoreBuck)
                                                         }
-                                                        currentNodePoint.addChildNode(tempnode)
-                                                        //   DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-
-                                                        HeadMaterial.shared.RemoveHeadHairTex()
-                                                        GetMeshNode(
+                                                        GetMorphtargetnode(
                                                             _bone: tempnode,
                                                             completionHandler: {
                                                                 node in
-                                                                node.geometry?.firstMaterial =
-                                                                    HairMaterial.shared.hairMaterial
-                                                                //     HairMaterial.shared.SethairColor(_color: UIColor(hex:   CurrentSelectedAvatarDetail.shared.ChangedAvatarColor.HairColor)!)
+                                                                if (node.morpher?.targets.count)! > 0 {
+                                                                    self.hairModelNode = tempnode
+                                                                }
+                                                                for i in 0..<(node.morpher?.targets.count)!
+                                                                {
+                                                                    if self.HeadCoreBuck.contains(
+                                                                        (node.morpher?.targets[i].name)!)
+                                                                    {
+                                                                        node.morpher?.setWeight(
+                                                                            1.0,
+                                                                            forTargetNamed: (node.morpher?
+                                                                                .targets[i].name!)!)
+                                                                    }
+                                                                }
+                                                                
                                                             })
-                                                        tempnode.isHidden = false
-                                                        if self.headwearModelNode != nil {
-                                                            if(ProjectSettings.shared.isDebug)
-                                                            {
-                                                                print("THE Head Wear BUCKET---", self.HeadCoreBuck)
-                                                            }
-                                                            GetMorphtargetnode(
-                                                                _bone: tempnode,
-                                                                completionHandler: {
-                                                                    node in
-                                                                    if (node.morpher?.targets.count)! > 0 {
-                                                                        self.hairModelNode = tempnode
-                                                                    }
-                                                                    for i in 0..<(node.morpher?.targets.count)!
+                                                    } else {
+                                                        GetMorphtargetnode(
+                                                            _bone: tempnode,
+                                                            completionHandler: {
+                                                                node in
+                                                                if (node.morpher?.targets.count)! > 0 {
+                                                                    self.hairModelNode = tempnode
+                                                                }
+                                                                for i in 0..<(node.morpher?.targets.count)!
+                                                                {
+                                                                    if self.HeadCoreBuck.contains(
+                                                                        (node.morpher?.targets[i].name)!)
                                                                     {
-                                                                        if self.HeadCoreBuck.contains(
-                                                                            (node.morpher?.targets[i].name)!)
-                                                                        {
-                                                                            node.morpher?.setWeight(
-                                                                                1.0,
-                                                                                forTargetNamed: (node.morpher?
-                                                                                    .targets[i].name!)!)
-                                                                        }
+                                                                        node.morpher?.setWeight(
+                                                                            1.0,
+                                                                            forTargetNamed: (node.morpher?
+                                                                                .targets[i].name!)!)
                                                                     }
-
-                                                                })
-                                                        } else {
-                                                            GetMorphtargetnode(
-                                                                _bone: tempnode,
-                                                                completionHandler: {
-                                                                    node in
-                                                                    if (node.morpher?.targets.count)! > 0 {
-                                                                        self.hairModelNode = tempnode
-                                                                    }
-                                                                    for i in 0..<(node.morpher?.targets.count)!
-                                                                    {
-                                                                        if self.HeadCoreBuck.contains(
-                                                                            (node.morpher?.targets[i].name)!)
-                                                                        {
-                                                                            node.morpher?.setWeight(
-                                                                                1.0,
-                                                                                forTargetNamed: (node.morpher?
-                                                                                    .targets[i].name!)!)
-                                                                        }
-                                                                    }
-                                                                })
-                                                        }
-                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                            ApiEvents.shared.HideLoading()
-                                                            self.OnQueueNetworkModel()
-                                                        }
-                                                    } catch {
-                                                        self.isClicked = false
-                                                        ApiEvents.shared.HideLoading()
-                                                        ApiEvents.shared.ShowPopupMessage(
-                                                            message: error.localizedDescription)
+                                                                }
+                                                            })
                                                     }
-                                                })
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                        ApiEvents.shared.HideLoading()
+                                                        self.OnQueueNetworkModel()
+                                                    }
+                                                }
+                                                
+                                            })
                                         })
+                                    }else
+                                    {
+                                        ApiEvents.shared.HideLoading()
+                                        self.OnQueueNetworkModel();
+                                    }
                                     
                                 }
+                                
+                            } catch {
+                                if(ProjectSettings.shared.isDebug)
+                                {
+                                    print(error)
+                                }
+                                
+                                ApiEvents.shared.HideLoading()
+                                ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
                             }
-                            
-                            
-                         
-                        } catch {
-                            if(ProjectSettings.shared.isDebug)
-                            {
-                                print(error)
-                            }
-                            self.isClicked = false
-                            ApiEvents.shared.HideLoading()
-                            ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
                         }
                     }
                 }
+            }else{
+                ApiEvents.shared.HideLoading()
+                    self.OnQueueNetworkModel();
             }
         }
+    }
+    
+    func Set2Dhairs(modelData : GetEconomyItemsResultDataInner,paretnodescenn:SCNNode){
+        self.Loop2Dhair(_bone: paretnodescenn)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
+        {
+            ApiEvents.shared.HideLoading()
+            self.OnQueueNetworkModel();
+        }
+    }
+    func Loop2Dhair(_bone: SCNNode!) {
+      if _bone != nil {
+        if _bone.geometry?.firstMaterial != nil {
+            HeadMaterial.shared.SetHeadHairTex(texture: (_bone.geometry?.firstMaterial!.diffuse.contents)! as! UIImage)
+#if AVATARYUG_DEMO
+            HeadMaterial.shared.SetHairColor(color: UIColor(hex: CurrentSelectedAvatarDetail.shared.ChangedAvatarColor.HairColor)!)
+            #endif
+        }
+      }
+      if _bone.childNodes.count > 0 {
+        for i in 0..._bone.childNodes.count - 1 {
+            Loop2Dhair(_bone: _bone.childNodes[i])
+        }
+      }
     }
 
     
@@ -2524,31 +2791,61 @@ class AvatarLoaderBase
             }
         }
         
+        var addNew:Bool = true
+        
+        if(currentFacialhairData != nil)
+        {
+                    if(currentFacialhairData.ID == modelData.ID)
+                    {
+                        isSameModelPresent = true
+                        addNew = false
+                        currentFacialhairData  = nil
+                        if currentNodePoint.childNodes.count > 0 {
+                            let nodename = currentNodePoint.childNodes[0].name!
+                            if nodename.contains(modelData.ID) {
+                                for item in currentNodePoint.childNodes {
+                                    item.removeFromParentNode()
+                                }
+                            }
+                        }
+#if AVATARYUG_DEMO
+                        DataHolder.shared.RemovePart(economyItem: modelData)
+                        #endif
+                    }
+                    else
+                    {
+                        currentFacialhairData = modelData
+#if AVATARYUG_DEMO
+                        DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                        #endif
+                    }
+        }
+        else
+        {
+                    currentFacialhairData = modelData
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+            #endif
+        }
+        HeadMaterial.shared.RemoveBeardTex()
+        
+        
         if(currentNodePoint.childNodes.count > 0)
         {
             let nodename = currentNodePoint.childNodes[0].name!
             if(nodename.contains(modelData.ID))
             {
-                isSameModelPresent = true
-                // DataHolder.shared.RemovePart(economyItem: modelData)
-                isClicked = false
+             
                 for item in currentNodePoint.childNodes
                 {
                     item.removeFromParentNode()
                 }
-                HeadMaterial.shared.RemoveBeardTex()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
-                {
-                    ApiEvents.shared.HideLoading()
-                    self.OnQueueNetworkModel();
-                }
             }
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
-        {
+     
             if(!isSameModelPresent)
-            {
+        {
                 let conflict = try? JSONDecoder().decode([Conflict].self, from: modelData.conflictingBuckets.data(using: .utf8)!)
                 for vertP in self.facevertexlist
                 {
@@ -2566,6 +2863,7 @@ class AvatarLoaderBase
                         }
                     }
                 }
+            }
                 if(currentNodePoint.childNodes.count > 0 )
                 {
                     for item in currentNodePoint.childNodes
@@ -2574,132 +2872,188 @@ class AvatarLoaderBase
                     }
                 }
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
+        if(addNew)
+        {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
+            {
+                if(config?.isTwoD == 1)
                 {
-                    if(config?.isTwoD == 1)
+                    let jsonData = modelData.artifacts.data(using: .utf8)!
+                    do
                     {
-                        let tempnode = SCNNode()
-                        tempnode.name = bucketname + "+" + modelData.ID
-                        if(currentNodePoint.childNodes.count > 0 )
-                        {
-                            for item in currentNodePoint.childNodes
-                            {
-                                item.removeFromParentNode()
-                            }
-                        }
-                        currentNodePoint.addChildNode(tempnode)
-                        tempnode.isHidden = true
-                        let imgsrc =  "https://avataryug.b-cdn.net/files/diffuse/" + modelData.templateID + ".png"
-                        guard let url = URL(string: imgsrc) else {  return  }
+                        let artifacts = try JSONDecoder().decode([ThreeDArtifact].self, from: jsonData)
                         ApiEvents.shared.ShowLoading()
-                        let task = URLSession.shared.dataTask(with: url)
+                        let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+                        if(artifact != nil)
                         {
-                            (data,Urlresponse ,error) in
-                            //  DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                            HeadMaterial.shared.SetBeardTex(texture: UIImage(data: data! )!)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
-                            {
-                                ApiEvents.shared.HideLoading()
-                                self.OnQueueNetworkModel();
-                            }
-                        }
-                        task.resume()
-                    }
-                    else
-                    {
-                        let jsonData = modelData.artifacts.data(using: .utf8)!
-                        do
-                        {
-                            let artifacts = try JSONDecoder().decode([ThreeDArtifact].self, from: jsonData)
-                            ApiEvents.shared.ShowLoading()
                             if(artifacts.count > 0){
-                                let artifact = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
-                                if(artifact != nil)
+                                ApiEvents.shared.ShowLoading()
+                                
+                                let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+                                if( artifact != nil)
                                 {
-                                    self.LoadModelData(urlstr: (artifact?.url!)!, completionHandler:
-                                                        {
-                                        data in
-                                        ModelDecryptionHandler.shared.GetModelData(data: data, completionHandler:
-                                                                                    {
-                                            decdata in
-                                            do
-                                            {
-                                                let sceneSource = GLTFSceneSource(data: decdata)
-                                                let scene = try sceneSource.scene()
-                                                let tempnode = SCNNode()
-                                                
-                                                tempnode.name = bucketname + "+" + modelData.ID
-                                                for meshdata  in scene.rootNode.childNodes
-                                                {
-                                                    
-                                                    tempnode.addChildNode(meshdata)
-                                                    meshdata.position = SCNVector3(0,0,0)
-                                                    meshdata.eulerAngles = SCNVector3(0,0,0)
-                                                }
-                                                if(currentNodePoint.childNodes.count > 0 )
-                                                {
-                                                    for item in currentNodePoint.childNodes
-                                                    {
-                                                        item.removeFromParentNode()
-                                                    }
-                                                }
-                                                
-                                                currentNodePoint.addChildNode(tempnode)
-                                                self.SelectFacialHairMorpher(_bone: tempnode)
-                                                // DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                                                HeadMaterial.shared.RemoveBeardTex()
-                                                GetMeshNode(_bone:tempnode, completionHandler:
-                                                                {
-                                                    node in
-                                                    node.geometry?.firstMaterial = FacialhairMaterial.shared.facialhairMaterial
-                                                    //                                        FacialhairMaterial.shared.SetFacialhairColor(_color: UIColor(hex: CurrentSelectedAvatarDetail.shared.ChangedAvatarColor.FacialHairColor)! )
-                                                    
-                                                })
-                                                tempnode.isHidden = false
-                                                
-                                                
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
-                                                {
-                                                    ApiEvents.shared.HideLoading()
-                                                    if(ProjectSettings.shared.isDebug)
-                                                    {
-                                                        print("======",currentNodePoint.childNodes.count)
-                                                    }
-                                                    self.OnQueueNetworkModel();
-                                                }
+                                    guard let url2 = URL(string: (artifact?.url!)!) else {
+                                        return
+                                    }
+                                    let getDataTask2 = URLSession.shared.dataTask(
+                                        with: url2,
+                                        completionHandler: { data, _, error in
+                                            guard let data = data, error == nil else {
+                                                return
                                             }
-                                            catch
-                                            {
-                                                self.isClicked = false;
-                                                if(ProjectSettings.shared.isDebug)
-                                                {
-                                                    print("Checkinggg--Error-->>")
-                                                    print("\(error.localizedDescription)")
-                                                }
+                                            HeadMaterial.shared.SetBeardTex(texture: UIImage(data: data)!)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                                 ApiEvents.shared.HideLoading()
-                                                ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
+                                                self.OnQueueNetworkModel()
                                             }
                                         })
-                                    })
+                                    getDataTask2.resume()
+                                    
                                 }
+                                else
+                                {
+                                    ApiEvents.shared.HideLoading()
+                                    self.OnQueueNetworkModel();
+                                }
+                                
                             }
-                            
-                    
-                        }
-                        catch
-                        {
-                            if(ProjectSettings.shared.isDebug)
-                            {
-                                print(error)
-                            }
-                            self.isClicked = false;
+                        }else{
                             ApiEvents.shared.HideLoading()
-                            ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
+                            ApiEvents.shared.ShowPopupMessage(message: "data not available")
+                            self.OnQueueNetworkModel()
                         }
+                     
+                    }
+                    catch
+                    {
+                        if(ProjectSettings.shared.isDebug)
+                        {
+                            print(error)
+                        }
+
+                        ApiEvents.shared.HideLoading()
+                        ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
+                    }
+                
+                }
+                else
+                {
+                    let jsonData = modelData.artifacts.data(using: .utf8)!
+                    do
+                    {
+                        let artifacts = try JSONDecoder().decode([ThreeDArtifact].self, from: jsonData)
+                        ApiEvents.shared.ShowLoading()
+                        let artifact = artifacts.first(where: { $0.device == Int(GetPlatfrom().rawValue)})
+                        if(artifact != nil)
+                        {
+                            self.LoadModelData(urlstr: (artifact?.url!)!, completionHandler:
+                                                {
+                                data in
+                                ModelDecryptionHandler.shared.GetModelData(data: data, completionHandler:
+                                                                            {
+                                    decdata in
+                                    
+                                    GLTFAsset.load(with: decdata, options: [:]) { (progress, status, maybeAsset, maybeError, _) in
+                                        let sceneSource = GLTFSCNSceneSource(asset: maybeAsset!)
+                                        let scene = sceneSource.defaultScene
+                                        let tempnode = SCNNode()
+                                        
+                                        tempnode.name = bucketname + "+" + modelData.ID
+                                        for meshdata  in scene!.rootNode.childNodes
+                                        {
+                                            
+                                            tempnode.addChildNode(meshdata)
+                                            meshdata.position = SCNVector3(0,0,0)
+                                            meshdata.eulerAngles = SCNVector3(0,0,0)
+                                        }
+                                        if(currentNodePoint.childNodes.count > 0 )
+                                        {
+                                            for item in currentNodePoint.childNodes
+                                            {
+                                                item.removeFromParentNode()
+                                            }
+                                        }
+                                        
+                                        currentNodePoint.addChildNode(tempnode)
+                                        self.SelectFacialHairMorpher(_bone: tempnode)
+#if AVATARYUG_DEMO
+                                        DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                        #endif
+                                        HeadMaterial.shared.RemoveBeardTex()
+                                        GetMeshNode(_bone:tempnode, completionHandler:
+                                                        {
+                                            node in
+                                            node.geometry?.firstMaterial = FacialhairMaterial.shared.facialhairMaterial
+                                           //  FacialhairMaterial.shared.SetFacialhairColor(_color: UIColor(hex: CurrentSelectedAvatarDetail.shared.ChangedAvatarColor.FacialHairColor)! )
+                                            
+                                        })
+                                        tempnode.isHidden = false
+                                        
+                                        
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
+                                        {
+                                            ApiEvents.shared.HideLoading()
+                                            if(ProjectSettings.shared.isDebug)
+                                            {
+                                                print("======",currentNodePoint.childNodes.count)
+                                            }
+                                            self.OnQueueNetworkModel();
+                                        }
+                                    }
+                                   
+                                })
+                            })
+                        }else{
+                            ApiEvents.shared.HideLoading()
+                            ApiEvents.shared.ShowPopupMessage(message: "data not available")
+                            self.OnQueueNetworkModel()
+                        }
+                     
+                    }
+                    catch
+                    {
+                        if(ProjectSettings.shared.isDebug)
+                        {
+                            print(error)
+                        }
+
+                        ApiEvents.shared.HideLoading()
+                        ApiEvents.shared.ShowPopupMessage(message: error.localizedDescription)
                     }
                 }
+            
+        }
+        }else{
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                ApiEvents.shared.HideLoading()
+                self.OnQueueNetworkModel()
             }
         }
+              
+        
+    }
+    func Set2DFacialhairs(modelData : GetEconomyItemsResultDataInner,paretnodescenn:SCNNode){
+        self.Loop2DFacialhair(_bone: paretnodescenn)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5)
+        {
+            ApiEvents.shared.HideLoading()
+            self.OnQueueNetworkModel();
+        }
+    }
+    func Loop2DFacialhair(_bone: SCNNode!) {
+      if _bone != nil {
+        if _bone.geometry?.firstMaterial != nil {
+            HeadMaterial.shared.SetBeardTex(texture: (_bone.geometry?.firstMaterial!.diffuse.contents)! as! UIImage)
+#if AVATARYUG_DEMO
+            HeadMaterial.shared.SetBreadColor(color: UIColor(hex: CurrentSelectedAvatarDetail.shared.ChangedAvatarColor.FacialHairColor)!)
+            #endif
+        }
+      }
+      if _bone.childNodes.count > 0 {
+        for i in 0..._bone.childNodes.count - 1 {
+            Loop2DFacialhair(_bone: _bone.childNodes[i])
+        }
+      }
     }
     
     // This function download eyeball,lip,eyebrow ,and skintone texture
@@ -2709,9 +3063,11 @@ class AvatarLoaderBase
             var addnew: Bool = true
             if currentEyeballData != nil {
                 if currentEyeballData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addnew = false
-                    isClicked = false
+     
                     currentEyeballData = EmptyEconomy()
                     EyeballMaterial.shared.RemoveEyeballTex()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -2725,30 +3081,61 @@ class AvatarLoaderBase
                 do {
                     let artifacts = try JSONDecoder().decode([TwoDArtifact].self, from: jsonData)
                     if artifacts.count > 0 {
-                        guard let url = URL(string: artifacts[0].link!) else { return }
-                        let getDataTask = URLSession.shared.dataTask(
-                            with: url,
-                            completionHandler: {
-                                data, _, error in
-                                guard let data = data, error == nil else { return }
-                                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                                EyeballMaterial.shared.SetEyeballTex(texture: UIImage(data: data)!)
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    ApiEvents.shared.HideLoading()
-                                    self.isClicked = false
-                                    self.OnQueueNetworkModel()
-                                }
-                            })
-                        getDataTask.resume()
+                        
+                        let artifacr = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
+                        
+                        if(artifacr != nil)
+                        {
+                            guard let url = URL(string: (artifacr?.url)!) else { return }
+                            let getDataTask = URLSession.shared.dataTask(
+                                with: url,
+                                completionHandler: {
+                                    data, _, error in
+//                                    guard let data = data, error == nil else { return }
+//                                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+//                                    EyeballMaterial.shared.SetEyeballTex(texture: UIImage(data: data)!)
+//                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+//                                        ApiEvents.shared.HideLoading()
+//
+//                                        self.OnQueueNetworkModel()
+//                                    }
+                                    if let imageData = data, let image = UIImage(data: imageData) {
+#if AVATARYUG_DEMO
+                                        DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                        #endif
+                                        EyeballMaterial.shared.SetEyeballTex(texture: image)
+#if AVATARYUG_DEMO
+                                        DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                        #endif
+                                       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                           ApiEvents.shared.HideLoading()
+                                           self.OnQueueNetworkModel()
+                                       }
+                                    } else {
+                                        // Handle the case where data is nil or couldn't be converted to an image
+                                        ApiEvents.shared.HideLoading ()
+                                        ApiEvents.shared.ShowPopupMessage (message: "Data is missing")
+                                    }
+                                })
+                            getDataTask.resume()
+                        }
+                        else
+                        {
+                            ApiEvents.shared.HideLoading()
+                            ApiEvents.shared.ShowPopupMessage(message: "Eyeball data not available")
+                            self.OnQueueNetworkModel()
+                        }
                     } else {
-                        self.isClicked = false
+        
                         ApiEvents.shared.HideLoading()
-                        ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+                        ApiEvents.shared.ShowPopupMessage(message: "Eyeball data not available")
+                        self.OnQueueNetworkModel()
                     }
                 } catch {
-                    self.isClicked = false
+
                     ApiEvents.shared.HideLoading()
-                    ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+                    ApiEvents.shared.ShowPopupMessage(message: "Eyeball data not available")
+                    self.OnQueueNetworkModel()
                 }
             }
         }
@@ -2758,9 +3145,11 @@ class AvatarLoaderBase
             var addnew: Bool = true
             if currentLipsData != nil {
                 if currentLipsData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem:  modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem:  modelData)
+                    #endif
                     addnew = false
-                    isClicked = false
+  
                     HeadMaterial.shared.RemoveLipTex()
                     currentLipsData = EmptyEconomy()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -2774,32 +3163,46 @@ class AvatarLoaderBase
                 do {
                     let artifacts = try JSONDecoder().decode([TwoDArtifact].self, from: jsonData)
                     if artifacts.count > 0 {
-                        guard let url = URL(string: artifacts[0].link!) else {
-                            return
+                        let artifacr = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
+                        if(artifacr != nil)
+                        {
+                            guard let url = URL(string: (artifacr?.url!)!) else {
+                                return
+                            }
+                            
+                            let getDataTask = URLSession.shared.dataTask(
+                                with: url,
+                                completionHandler: { data, _, error in
+                                    guard let data = data, error == nil else {
+                                        return
+                                    }
+                                    HeadMaterial.shared.SetLipTex(texture: UIImage(data: data)!)
+#if AVATARYUG_DEMO
+                                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                    #endif
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        self.OnQueueNetworkModel()
+                                    }
+                                })
+                            getDataTask.resume()
                         }
-
-                        let getDataTask = URLSession.shared.dataTask(
-                            with: url,
-                            completionHandler: { data, _, error in
-                                guard let data = data, error == nil else {
-                                    return
-                                }
-                                HeadMaterial.shared.SetLipTex(texture: UIImage(data: data)!)
-                                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    self.OnQueueNetworkModel()
-                                }
-                            })
-                        getDataTask.resume()
+                        else
+                        {
+                            ApiEvents.shared.HideLoading()
+                            ApiEvents.shared.ShowPopupMessage(message: "Lips data not available")
+                            self.OnQueueNetworkModel()
+                        }
                     } else {
-                        isClicked = false
+     
                         ApiEvents.shared.HideLoading()
-                        ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+                        ApiEvents.shared.ShowPopupMessage(message: "Lips data not available")
+                        self.OnQueueNetworkModel()
                     }
                 } catch {
-                    isClicked = false
+
                     ApiEvents.shared.HideLoading()
-                    ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+                    ApiEvents.shared.ShowPopupMessage(message: "Lips data not available")
+                    self.OnQueueNetworkModel()
                 }
             }
         }
@@ -2809,9 +3212,11 @@ class AvatarLoaderBase
             var addnew: Bool = true
             if currentEyebrowData != nil {
                 if currentEyebrowData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem:  modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem:  modelData)
+                    #endif
                     addnew = false
-                    isClicked = false
+            
                     HeadMaterial.shared.RemoveEyebrowTex()
                     currentEyebrowData = EmptyEconomy()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -2825,33 +3230,46 @@ class AvatarLoaderBase
                 do {
                     let artifacts = try JSONDecoder().decode([TwoDArtifact].self, from: jsonData)
                     if artifacts.count > 0 {
-                        guard let url = URL(string: artifacts[0].link!) else {
-                            return
+                        let artifacr = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
+                        if(artifacr != nil)
+                        {
+                            guard let url = URL(string: (artifacr?.url!)!) else {
+                                return
+                            }
+                            
+                            let getDataTask = URLSession.shared.dataTask(
+                                with: url,
+                                completionHandler: { data, _, error in
+                                    guard let data = data, error == nil else {
+                                        return
+                                    }
+                                    HeadMaterial.shared.SetEyebrowTex(texture: UIImage(data: data)!)
+#if AVATARYUG_DEMO
+                                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                    #endif
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        ApiEvents.shared.HideLoading()
+                                        self.OnQueueNetworkModel()
+                                    }
+                                })
+                            getDataTask.resume()
+                        }else
+                        {
+                            ApiEvents.shared.HideLoading()
+                            ApiEvents.shared.ShowPopupMessage(message: "Eyebrow data not available")
+                            self.OnQueueNetworkModel()
                         }
-
-                        let getDataTask = URLSession.shared.dataTask(
-                            with: url,
-                            completionHandler: { data, _, error in
-                                guard let data = data, error == nil else {
-                                    return
-                                }
-                                HeadMaterial.shared.SetEyebrowTex(texture: UIImage(data: data)!)
-                                //    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    ApiEvents.shared.HideLoading()
-                                    self.OnQueueNetworkModel()
-                                }
-                            })
-                        getDataTask.resume()
                     } else {
-                        isClicked = false
+
                         ApiEvents.shared.HideLoading()
-                        ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+                        ApiEvents.shared.ShowPopupMessage(message: "Eyebrow data not available")
+                        self.OnQueueNetworkModel()
                     }
                 } catch {
-                    isClicked = false
+
                     ApiEvents.shared.HideLoading()
-                    ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+                    ApiEvents.shared.ShowPopupMessage(message: "Eyebrow data not available")
+                    self.OnQueueNetworkModel()
                 }
 
             }
@@ -2861,9 +3279,11 @@ class AvatarLoaderBase
             var addnew: Bool = true
             if currentSkinToneData != nil {
                 if currentSkinToneData.ID == modelData.ID {
-                    // DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addnew = false
-                    isClicked = false
+
                     HeadMaterial.shared.RemoveSkinTonetexture()
                     BodyMaterial.shared.RemoveSkinTonetexture()
                     currentSkinToneData = EmptyEconomy()
@@ -2884,53 +3304,66 @@ class AvatarLoaderBase
                         {
                             print(artifacts)
                         }
-                        if artifacts.count > 0 {
-                            guard let url = URL(string: artifacts[0].face_path!) else {
-                                return
+                        if (artifacts.count > 0)
+                        {
+                            
+                            let artifacr = artifacts.first(where:  {$0.device == Int(GetPlatfrom().rawValue) })
+                            if(artifacr != nil)
+                            {
+                                guard let url = URL(string: (artifacr?.face_path!)!) else {
+                                    return
+                                }
+                                
+                                let getDataTask = URLSession.shared.dataTask(
+                                    with: url,
+                                    completionHandler: { data, _, error in
+                                        guard let data = data, error == nil else {
+                                            return
+                                        }
+                                        HeadMaterial.shared.SetSkinTonetexture(
+                                            skinTex: UIImage(data: data)!)
+                                        
+                                        guard let url2 = URL(string: (artifacr?.body_path!)!) else {
+                                            return
+                                        }
+                                        let getDataTask2 = URLSession.shared.dataTask(
+                                            with: url2,
+                                            completionHandler: { data, _, error in
+                                                guard let data = data, error == nil else {
+                                                    return
+                                                }
+                                                BodyMaterial.shared.SetSkinTonetexture(
+                                                    skinTex: UIImage(data: data)!)
+#if AVATARYUG_DEMO
+                                                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                                                #endif
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                    ApiEvents.shared.HideLoading()
+                                                    self.OnQueueNetworkModel()
+                                                }
+                                            })
+                                        getDataTask2.resume()
+                                    })
+                                getDataTask.resume()
                             }
-
-                            let getDataTask = URLSession.shared.dataTask(
-                                with: url,
-                                completionHandler: { data, _, error in
-                                    guard let data = data, error == nil else {
-                                        return
-                                    }
-                                    HeadMaterial.shared.SetSkinTonetexture(
-                                        skinTex: UIImage(data: data)!)
-
-                                    guard let url2 = URL(string: artifacts[0].body_path!) else {
-                                        return
-                                    }
-                                    let getDataTask2 = URLSession.shared.dataTask(
-                                        with: url2,
-                                        completionHandler: { data, _, error in
-                                            guard let data = data, error == nil else {
-                                                return
-                                            }
-                                            BodyMaterial.shared.SetSkinTonetexture(
-                                                skinTex: UIImage(data: data)!)
-                                            //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                ApiEvents.shared.HideLoading()
-                                                self.OnQueueNetworkModel()
-                                            }
-                                        })
-                                    getDataTask2.resume()
-                                })
-                            getDataTask.resume()
+                            else
+                            {
+                                ApiEvents.shared.ShowPopupMessage(message: "Skintone data not available")
+                                self.OnQueueNetworkModel()
+                            }
                         } else {
-                            isClicked = false
-                            ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+  
+                            ApiEvents.shared.ShowPopupMessage(message: "Skintone data not available")
                             self.OnQueueNetworkModel()
                         }
                     } catch {
-                        isClicked = false
-                        ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+              
+                        ApiEvents.shared.ShowPopupMessage(message: "Skintone data not available")
                         self.OnQueueNetworkModel()
                     }
                 } else {
-                    isClicked = false
-                    ApiEvents.shared.ShowPopupMessage(message: "CAN'T LOAD THIS ITEM")
+     
+                    ApiEvents.shared.ShowPopupMessage(message: "Skintone data not available")
                     self.OnQueueNetworkModel()
                 }
             }
@@ -2945,15 +3378,21 @@ class AvatarLoaderBase
             ResetPerticaulerBlendshape(names: "Face_")
             if currentFaceShapeData != nil {
                 if currentFaceShapeData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addNew = false
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                     currentFaceShapeData = modelData
                     addNew = true
                 }
             } else {
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
                 currentFaceShapeData = modelData
                 addNew = true
             }
@@ -2963,15 +3402,21 @@ class AvatarLoaderBase
             ResetPerticaulerBlendshape(names: "Eyeshape_")
             if currentEyeShapeData != nil {
                 if currentEyeShapeData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addNew = false
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                     currentEyeShapeData = modelData
                     addNew = true
                 }
             } else {
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
                 currentEyeShapeData = modelData
                 addNew = true
             }
@@ -2981,15 +3426,21 @@ class AvatarLoaderBase
             ResetPerticaulerBlendshape(names: "Eyebrows_")
             if currentEyebrowshapeData != nil {
                 if currentEyebrowshapeData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addNew = false
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                     currentEyebrowshapeData = modelData
                     addNew = true
                 }
             } else {
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
                 currentEyebrowshapeData = modelData
                 addNew = true
             }
@@ -2999,15 +3450,21 @@ class AvatarLoaderBase
             ResetPerticaulerBlendshape(names: "Nose_")
             if currentNoseShapeData != nil {
                 if currentNoseShapeData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addNew = false
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                     currentNoseShapeData = modelData
                     addNew = true
                 }
             } else {
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
                 currentNoseShapeData = modelData
                 addNew = true
             }
@@ -3017,15 +3474,21 @@ class AvatarLoaderBase
             ResetPerticaulerBlendshape(names: "Lips_")
             if currentLipShapeData != nil {
                 if currentLipShapeData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addNew = false
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                     currentLipShapeData = modelData
                     addNew = true
                 }
             } else {
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
                 currentLipShapeData = modelData
                 addNew = true
             }
@@ -3035,15 +3498,21 @@ class AvatarLoaderBase
             ResetPerticaulerBlendshape(names: "Ears_")
             if currentEarshapeData != nil {
                 if currentEarshapeData.ID == modelData.ID {
-                    //DataHolder.shared.RemovePart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.RemovePart(economyItem: modelData)
+                    #endif
                     addNew = false
                 } else {
-                    //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                    DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                    #endif
                     currentEarshapeData = modelData
                     addNew = true
                 }
             } else {
-                //DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+#if AVATARYUG_DEMO
+                DataHolder.shared.AddCurrentBodyPart(economyItem: modelData)
+                #endif
                 currentEarshapeData = modelData
                 addNew = true
             }
@@ -3157,11 +3626,11 @@ class AvatarLoaderBase
             }
         }
 
-        var gender = "1"
+        var gender = "0"
         if GetGender() == .Male {
-            gender = "1"
+            gender = "0"
         } else if GetGender() == .Female {
-            gender = "2"
+            gender = "1"
         }
         if loadTop {
             defaultModelList.append(DefaultAvatarData.shared.GetDefaultModelList(gender: gender)[0])
@@ -3291,11 +3760,11 @@ class AvatarLoaderBase
             loadHandwear = !isHandPResent
         }
 
-        var gender = "1"
+        var gender = "0"
         if GetGender() == .Male {
-            gender = "1"
+            gender = "0"
         } else if GetGender() == .Female {
-            gender = "2"
+            gender = "1"
         }
         if loadTop {
             defaultModelList.append(DefaultAvatarData.shared.GetDefaultModelList(gender: gender)[0])
@@ -3317,18 +3786,21 @@ class AvatarLoaderBase
 
     
     //This method clears all data when logout
-    public func Logout() {
-        //DataHolder.shared.currentSelectedBodyParts = []
-        //DataHolder.shared.itemsTobuy  = []
+    public func Logout()
+    {
+#if AVATARYUG_DEMO
+        DataHolder.shared.currentSelectedBodyParts = []
+        DataHolder.shared.itemsTobuy  = []
+        #endif
         clipBones = []
         headGeometryModel = nil
         innermouthmorpherModel = nil
         headmorpherModel = nil
         VertexList = []
         EyeballMaterial.shared.RemoveEyeballTex()
-        BodyMaterial.shared.RemoveBodyColor()
+      
         BodyMaterial.shared.clearTattooTexture()
-        HeadMaterial.shared.RemoveBodyColor()
+      
         HeadMaterial.shared.RemoveTattooTexture()
         HeadMaterial.shared.RemoveHeadHairTex()
         HeadMaterial.shared.RemoveHairColor()
@@ -3355,7 +3827,6 @@ class AvatarLoaderBase
         currentEyeballData = nil
         currentLipsData = nil
         currentEyebrowData = nil
-        OnBoardingModelst = []
         headNode = nil
         ModelParentNode = nil
         currentSelectedTop = nil

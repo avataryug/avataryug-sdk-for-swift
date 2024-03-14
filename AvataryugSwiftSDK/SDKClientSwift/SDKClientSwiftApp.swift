@@ -3,6 +3,38 @@ import SwiftUI
 @main
 struct SDKClientSwiftApp: App ,ApiEventSubscriber
 {
+    func SetLoadingScr(_showLoading: Bool, message: String, warning: Bool) {
+        
+    }
+    
+    func SetProgressLoadingScr(_showLoading: Bool, value: Double) {
+        
+    }
+    
+    func ShowResetPanel() {
+        
+    }
+    
+    func Logout() {
+        
+    }
+    
+    func ShowRenderImage(show: Bool, url: String) {
+        
+    }
+    
+    func OnSelectDeselectItem() {
+        
+    }
+    
+    func OnSyncAvatars() {
+        
+    }
+    
+    func ShowGeneratedAvatar(imageUrl: String, avatarUrl: String) {
+        
+    }
+    
     func ShowMessagePopup(message: String, showSimpleNot: Bool) {
         self.showSimpleNotificationPanel = showSimpleNot
         self.simpleNotificationMessage = message
@@ -41,16 +73,7 @@ struct SDKClientSwiftApp: App ,ApiEventSubscriber
                 default:
                     StartScreen( panelState: $panelState)
                 }
-//                StartScreen(showAvataryugTestScreen: $showAvataryugTestScreen, showQuickTestScreen: $showQuickTestScreen)
-//                if(showAvataryugTestScreen)
-//                {
-//
-//                    AvataryugTest()
-//                }
-//                if(showQuickTestScreen)
-//                {
-//                    QuickTest()
-//                }
+
                 if(showSimpleNotificationPanel)
                 {
                     PopupPanel(showSimpleNotificationPanel: $showSimpleNotificationPanel, notificationText: simpleNotificationMessage)

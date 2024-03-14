@@ -3,31 +3,31 @@ import Foundation
 struct AvatarData : Codable
 {
     ///Get or Set Race
-    var Race : String = ""
+    public var Race : String = ""
     
     ///Get or Set AgeRange
-    var AgeRange : String = ""
+    public var AgeRange : String = ""
     
     ///Get or Set Gender
-    var Gender : Int = 0
+    public var Gender : Int = 0
     
     ///Get or Set CustomMetaData
-    var CustomMetaData : String = ""
+    public var CustomMetaData : String = ""
     
     ///Get or Set MetaData
-    var MetaData : String = ""
+    public var MetaData : String = ""
     
     ///Get or Set ColorMeta
-    var ColorMeta : PropColors?
+    public var ColorMeta : PropColors
     
     ///Get or Set BucketData
-    var BucketData :  [PropData] = []
+    public var BucketData :  [PropData] = []
     
     ///Get or Set Blendshapes
-    var Blendshapes : [BlendShape] = []
+    public var Blendshapes : [BlendShape] = []
     
     
-    public init(Race: String, AgeRange: String, Gender: Int, CustomMetaData: String, MetaData: String, ColorMeta: PropColors? = nil, BucketData: [PropData], Blendshapes: [BlendShape]) {
+    public init(Race: String, AgeRange: String, Gender: Int, CustomMetaData: String, MetaData: String, ColorMeta: PropColors, BucketData: [PropData], Blendshapes: [BlendShape]) {
         self.Race = Race
         self.AgeRange = AgeRange
         self.Gender = Gender

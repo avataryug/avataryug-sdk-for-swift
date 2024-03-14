@@ -607,7 +607,7 @@ struct CreatedButton: View {
                 .foregroundColor(Color(.black))
                 .frame(width: 180, height: 35)
                 .font(.system(size: 12))
-                .fontWeight(.medium)
+                //.fontWeight(.medium)
                 .background(
                     LinearGradient(gradient: Gradient(colors: [ Color(.white),Color(.systemGray6)]), startPoint: .top, endPoint: .bottom)
                         .overlay(
@@ -640,7 +640,7 @@ struct CreatedTwoButton: View {
                     .foregroundColor(Color(.black))
                     .frame(width: 180, height: 35)
                     .font(.system(size: 12))
-                    .fontWeight(.medium)
+                    //.fontWeight(.medium)
                     .background(
                         LinearGradient(gradient: Gradient(colors: [ Color(.white),Color(.systemGray6)]), startPoint: .top, endPoint: .bottom)
                             .overlay(
@@ -661,7 +661,7 @@ struct CreatedTwoButton: View {
                     .foregroundColor(Color(.black))
                     .frame(width: 180, height: 35)
                     .font(.system(size: 12))
-                    .fontWeight(.medium)
+                    //.fontWeight(.medium)
                     .background(
                         LinearGradient(gradient: Gradient(colors: [ Color(.white),Color(.systemGray6)]), startPoint: .top, endPoint: .bottom)
                             .overlay(

@@ -235,8 +235,8 @@ open class EconomyAPI {
      - parameter completion: completion handler to receive the data and the error objects
      */
     @discardableResult
-    open class func getEconomyItems(category: String, status: Int, gender: Int, apiResponseQueue: DispatchQueue = OpenAPIClientAPI.apiResponseQueue, completion: @escaping ((_ data: GetEconomyItemsResult?, _ error: Error?) -> Void)) -> RequestTask {
-        return getEconomyItemsWithRequestBuilder(category: category, status: status, gender: gender).execute(apiResponseQueue) { result in
+    open class func getEconomyItems(category: String, status: Int, gender: Int,offset:Int,limit:Int, apiResponseQueue: DispatchQueue = OpenAPIClientAPI.apiResponseQueue, completion: @escaping ((_ data: GetEconomyItemsResult?, _ error: Error?) -> Void)) -> RequestTask {
+        return getEconomyItemsWithRequestBuilder(category: category, status: status, gender: gender,offset: offset,limit: limit).execute(apiResponseQueue) { result in
             switch result {
             case let .success(response):
                 if(ProjectSettings.shared.isDebug)
@@ -262,7 +262,7 @@ open class EconomyAPI {
      - parameter gender: (query) Type of the item for which gender it belongs to Male &#x3D; 1, Female &#x3D; 2, Common &#x3D; 3 
      - returns: RequestBuilder<GetEconomyItemsResult> 
      */
-    open class func getEconomyItemsWithRequestBuilder(category: String, status: Int, gender: Int) -> RequestBuilder<GetEconomyItemsResult> {
+    open class func getEconomyItemsWithRequestBuilder(category: String, status: Int, gender: Int,offset:Int,limit:Int) -> RequestBuilder<GetEconomyItemsResult> {
         let localVariablePath = "/GetEconomyItems"
         let localVariableURLString = OpenAPIClientAPI.basePath + localVariablePath
         let localVariableParameters: [String: Any]? = nil
@@ -272,6 +272,8 @@ open class EconomyAPI {
             "Category": (wrappedValue: category.encodeToJSON(), isExplode: true),
             "Status": (wrappedValue: status.encodeToJSON(), isExplode: true),
             "Gender": (wrappedValue: gender.encodeToJSON(), isExplode: true),
+            "Offset": (wrappedValue: offset.encodeToJSON(), isExplode: true),
+            "Limit": (wrappedValue: limit.encodeToJSON(), isExplode: true),
         ])
 
         let localVariableNillableHeaders: [String: Any?] = [

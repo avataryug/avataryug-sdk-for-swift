@@ -3,12 +3,12 @@ import Foundation
 struct PropData: Codable ,Hashable
 {
     /// Gets or Sets CoreBucket
-    var CoreBucket : String?
+    var CoreBucket : String
     
     /// Gets or Sets ID
-    var ID : String?
+    var ID : String
     
-    public init( CoreBucket: String?, ID: String? ) {
+    public init( CoreBucket: String, ID: String ) {
         self.CoreBucket = CoreBucket
         self.ID = ID
     }

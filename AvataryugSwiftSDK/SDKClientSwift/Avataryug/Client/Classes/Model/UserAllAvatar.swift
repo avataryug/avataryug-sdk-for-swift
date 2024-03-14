@@ -3,18 +3,18 @@ import Foundation
 struct UserAllAvatar: Codable
 {
     /// Gets or Sets avatarID
-    public var avatarID: String?
+    public var avatarID: String
     
     /// Gets or Sets avatarUrl
-    public var avatarUrl: [AvatarMeshURLData]?
+    public var avatarUrl: [AvatarMeshURLData] = []
     
     /// Gets or Sets thumbUrl
-    public var thumbUrl: [AvatarThumbnailURLData]?
+    public var thumbUrl: [AvatarThumbnailURLData] = []
     
     /// Gets or Sets avatardata
-    public var avatardata : AvatarData?
+    public var avatardata : AvatarData
     
-    public init( avatarID: String?, avatarUrl: [AvatarMeshURLData]?, thumbUrl: [AvatarThumbnailURLData]?, avatardata : AvatarData?) {
+    public init( avatarID: String, avatarUrl: [AvatarMeshURLData] = [], thumbUrl: [AvatarThumbnailURLData] = [], avatardata : AvatarData) {
         self.avatarID = avatarID
         self.avatarUrl = avatarUrl
         self.thumbUrl = thumbUrl

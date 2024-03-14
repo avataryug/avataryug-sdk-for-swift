@@ -1,7 +1,12 @@
 import Foundation
 import SceneKit
 
-///Warning: Please refrain from modifying or editing these classes as it may potentially result in breaking the SDK functionality.
+
+struct ConflictNames : Codable,Hashable
+{
+    var name : String!
+}
+
 struct BodywearPointDetail
 {
     var PointName:String = "";
@@ -10,10 +15,6 @@ struct BodywearPointDetail
     var Rotation : SCNVector3 = SCNVector3(0,0,0);
 };
 
-struct ConflictNames : Codable,Hashable
-{
-    var name : String!
-}
 
 public class  DefaultAvatarData
 {
@@ -126,67 +127,75 @@ public class  DefaultAvatarData
     {
         var modeldataList : [ModelData] = []
 
-        var modelData : ModelData = ModelData(DisplayID: "", DisplayName: "", MainCatID: "", GlbPath: "", GlbPathOffline: "", CoreBucket: "", ConflictingBuckets: "")
+        var modelData : ModelData = ModelData(DisplayID: "", DisplayName: "", MainCatID: "", GlbPath: "", GlbPathOffline: "", CoreBucket: "", ConflictingBuckets: "", Gender: 0)
         
 
-        if(gender == "2")
+        if(gender == "1")
         {
+            modelData.Gender = 1
             modelData.MainCatID = "Top";
             modelData.CoreBucket = "upperbody_sleeve_short";
-            modelData.GlbPath = "https://avataryug.b-cdn.net/standard/female_standard_top.glb"
-            modelData.GlbPathOffline =  "female_standard_top.glb"
+            modelData.GlbPath = "https://aystorage.b-cdn.net/standard/female_standard_top.glb"
+            modelData.GlbPathOffline =  "female_standard_top"
             modelData.ConflictingBuckets = "[{\"name\":\"upperbody_shoulder_left\"},{\"name\":\"upperbody_sleeveless\"},{\"name\":\"upperbody_arm_right\"},{\"name\":\"upperbody_shoulder_both\"},{\"name\":\"upperbody_back\"},{\"name\":\"upperbody_sleeve_full\"},{\"name\":\"upperbody_arm_left\"},{\"name\":\"upperbody_wrist_both\"},{\"name\":\"upperbody_arm_both\"},{\"name\":\"upperbody_stomach\"},{\"name\":\"upperbody_hand_right\"},{\"name\":\"upperbody_shoulder_right\"},{\"name\":\"upperbody_wrist_right\"},{\"name\":\"upperbody_forearm_right\"},{\"name\":\"upperbody_forearm_both\"},{\"name\":\"upperbody_forearm_left\"},{\"name\":\"upperbody_wrist_left\"},{\"name\":\"upperbody_chest\"},{\"name\":\"upperbody_sleeve_short\"},{\"name\":\"upperbody_hand_left\"},{\"name\":\"upperbody_front\"},{\"name\":\"fullbody_without_foot\"},{\"name\":\"fullbody_with_head_foot\"},{\"name\":\"fullbody_without_head\"},{\"name\":\"fullbody_without_head_foot\"}]";
           
             modeldataList.append(modelData);
 
+            modelData.Gender = 1
             modelData.MainCatID = "Bottom";
             modelData.CoreBucket = "lowerbody_without_foot";
-            modelData.GlbPath = "https://avataryug.b-cdn.net/standard/female_standard_bottom.glb";
-            modelData.GlbPathOffline = "female_standard_bottom.glb";
+            modelData.GlbPath = "https://aystorage.b-cdn.net/standard/female_standard_bottom.glb";
+            modelData.GlbPathOffline = "female_standard_bottom";
             modelData.ConflictingBuckets = "[{\"name\":\"lowerbody_foot_right\"},{\"name\":\"lowerbody_knee_right\"},{\"name\":\"lowerbody_without_foot\"},{\"name\":\"lowerbody_leg_both\"},{\"name\":\"lowerbody_knee_left\"},{\"name\":\"lowerbody_foot_left\"},{\"name\":\"lowerbody_leg_left\"},{\"name\":\"lowerbody_knee_both\"},{\"name\":\"lowerbody_leg_right\"},{\"name\":\"lowerbody_till_knee\"},{\"name\":\"lowerbody_thigh_both\"},{\"name\":\"lowerbody_thigh_right\"},{\"name\":\"lowerbody_thigh_left\"},{\"name\":\"fullbody_without_foot\"},{\"name\":\"fullbody_with_head_foot\"},{\"name\":\"fullbody_without_head\"},{\"name\":\"fullbody_without_head_foot\"}]";
             modeldataList.append(modelData);
 
+            modelData.Gender = 1
             modelData.MainCatID = "Footwear";
             modelData.CoreBucket = "lowerbody_foot_both";
-            modelData.GlbPathOffline =  "standard_footwear.glb"
-            modelData.GlbPath =  "https://avataryug.b-cdn.net/standard/standard_footwear.glb";
+            modelData.GlbPathOffline =  "standard_footwear"
+            modelData.GlbPath =  "https://aystorage.b-cdn.net/standard/standard_footwear.glb";
             modelData.ConflictingBuckets = "[{\"name\":\"lowerbody_foot_both\"}]";
             modeldataList.append(modelData);
 
+            modelData.Gender = 1
             modelData.MainCatID = "Handwear";
             modelData.CoreBucket = "upperbody_hand_both";
-            modelData.GlbPathOffline =  "standard_hand.glb"
-            modelData.GlbPath =   "https://avataryug.b-cdn.net/standard/standard_hand.glb";
+            modelData.GlbPathOffline =  "standard_hand"
+            modelData.GlbPath =   "https://aystorage.b-cdn.net/standard/standard_hand.glb";
             modelData.ConflictingBuckets = "[{\"name\":\"upperbody_hand_both\"}]";
             modeldataList.append(modelData);
         }
         else
         {
+            modelData.Gender = 0
             modelData.MainCatID = "Top";
             modelData.CoreBucket = "upperbody_sleeve_short";
-            modelData.GlbPath =  "https://avataryug.b-cdn.net/standard/male_standard_top.glb";
-            modelData.GlbPathOffline =  "male_standard_top.glb"
+            modelData.GlbPath =  "https://aystorage.b-cdn.net/standard/male_standard_top.glb";
+            modelData.GlbPathOffline =  "male_standard_top"
             modelData.ConflictingBuckets = "[{\"name\":\"upperbody_shoulder_left\"},{\"name\":\"upperbody_sleeveless\"},{\"name\":\"upperbody_arm_right\"},{\"name\":\"upperbody_shoulder_both\"},{\"name\":\"upperbody_back\"},{\"name\":\"upperbody_sleeve_full\"},{\"name\":\"upperbody_arm_left\"},{\"name\":\"upperbody_wrist_both\"},{\"name\":\"upperbody_arm_both\"},{\"name\":\"upperbody_stomach\"},{\"name\":\"upperbody_hand_right\"},{\"name\":\"upperbody_shoulder_right\"},{\"name\":\"upperbody_wrist_right\"},{\"name\":\"upperbody_forearm_right\"},{\"name\":\"upperbody_forearm_both\"},{\"name\":\"upperbody_forearm_left\"},{\"name\":\"upperbody_wrist_left\"},{\"name\":\"upperbody_chest\"},{\"name\":\"upperbody_sleeve_short\"},{\"name\":\"upperbody_hand_left\"},{\"name\":\"upperbody_front\"},{\"name\":\"fullbody_without_foot\"},{\"name\":\"fullbody_with_head_foot\"},{\"name\":\"fullbody_without_head\"},{\"name\":\"fullbody_without_head_foot\"}]";
             modeldataList.append(modelData);
 
+            modelData.Gender = 0
             modelData.MainCatID = "Bottom";
             modelData.CoreBucket = "lowerbody_without_foot";
-            modelData.GlbPathOffline =  "male_standard_bottom.glb"
-            modelData.GlbPath = "https://avataryug.b-cdn.net/standard/male_standard_bottom.glb";
+            modelData.GlbPathOffline =  "male_standard_bottom"
+            modelData.GlbPath = "https://aystorage.b-cdn.net/standard/male_standard_bottom.glb";
             modelData.ConflictingBuckets = "[{\"name\":\"lowerbody_foot_right\"},{\"name\":\"lowerbody_knee_right\"},{\"name\":\"lowerbody_without_foot\"},{\"name\":\"lowerbody_leg_both\"},{\"name\":\"lowerbody_knee_left\"},{\"name\":\"lowerbody_foot_left\"},{\"name\":\"lowerbody_leg_left\"},{\"name\":\"lowerbody_knee_both\"},{\"name\":\"lowerbody_leg_right\"},{\"name\":\"lowerbody_till_knee\"},{\"name\":\"lowerbody_thigh_both\"},{\"name\":\"lowerbody_thigh_right\"},{\"name\":\"lowerbody_thigh_left\"},{\"name\":\"fullbody_without_foot\"},{\"name\":\"fullbody_with_head_foot\",{\"name\":\"fullbody_without_head\"},{\"name\":\"fullbody_without_head_foot\"}]";
             modeldataList.append(modelData);
 
+            modelData.Gender = 0
             modelData.MainCatID = "Footwear";
             modelData.CoreBucket = "lowerbody_foot_both";
-            modelData.GlbPathOffline =  "standard_footwear.glb"
-            modelData.GlbPath =  "https://avataryug.b-cdn.net/standard/standard_footwear.glb";
+            modelData.GlbPathOffline =  "standard_footwear"
+            modelData.GlbPath =  "https://aystorage.b-cdn.net/standard/standard_footwear.glb";
             modelData.ConflictingBuckets = "[{\"name\":\"lowerbody_foot_both\"}]";
             modeldataList.append(modelData);
 
+            modelData.Gender = 0
             modelData.MainCatID = "Handwear";
             modelData.CoreBucket = "upperbody_hand_both";
-            modelData.GlbPathOffline =  "standard_hand.glb"
-            modelData.GlbPath =   "https://avataryug.b-cdn.net/standard/standard_hand.glb";
+            modelData.GlbPathOffline =  "standard_hand"
+            modelData.GlbPath =   "https://aystorage.b-cdn.net/standard/standard_hand.glb";
             modelData.ConflictingBuckets = "[{\"name\":\"upperbody_hand_both\"}]";
             modeldataList.append(modelData);
         }

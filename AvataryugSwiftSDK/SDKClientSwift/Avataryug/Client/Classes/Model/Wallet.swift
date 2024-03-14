@@ -3,12 +3,12 @@ import Foundation
 struct Wallet: Codable
 {
     /// Gets or Sets VirtualCurrency
-    let Amount: Int?
+    let Amount: Int
     
     /// Gets or Sets Amount
-    let VirtualCurrency: String?
+    let VirtualCurrency: String
     
-    public init( Amount: Int?, VirtualCurrency: String?) {
+    public init( Amount: Int , VirtualCurrency: String ) {
         self.Amount = Amount
         self.VirtualCurrency = VirtualCurrency
     }

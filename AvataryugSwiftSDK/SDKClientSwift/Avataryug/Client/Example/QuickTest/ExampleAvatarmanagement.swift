@@ -302,7 +302,7 @@ struct ExampleAvatarmanagement: View {
                 "EyebrowColor": "#2b2826",
                 "FacialHairColor": "#3b3b3b",
                 "LipColor": "#e15667",
-                "FaceColor": "#FFFFFF"
+                "FaceColor": "#ffffff"
             },
             "BucketData": [
                 {"CoreBucket": "Hair/hair", "ID": "d69374fc-cb26-43c5-a828-0f2be3b7d005"},

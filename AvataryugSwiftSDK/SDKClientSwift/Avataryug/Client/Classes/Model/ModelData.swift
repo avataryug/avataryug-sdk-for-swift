@@ -3,33 +3,35 @@ import Foundation
 struct ModelData  : Codable
 {
     /// Gets or Sets DisplayID
-    var DisplayID:String?;
+    var DisplayID:String
     
     /// Gets or Sets DisplayName
-    var DisplayName :String?;
+    var DisplayName :String
     
     /// Gets or Sets MainCatID
-    var MainCatID :String?;
+    var MainCatID :String
     
+    var Gender:Int
     /// Gets or Sets GlbPath
-    var GlbPath :String?;
+    var GlbPath :String
     
     /// Gets or Sets GlbPathOffline
-    var GlbPathOffline :String?;
+    var GlbPathOffline :String
     
     /// Gets or Sets CoreBucket
-    var CoreBucket:String?;
+    var CoreBucket:String
     
     /// Gets or Sets ConflictingBuckets
-    var ConflictingBuckets:String?;
+    var ConflictingBuckets:String;
     
-    public init( DisplayID:String?, DisplayName :String?, MainCatID :String?, GlbPath :String?, GlbPathOffline :String?, CoreBucket:String?, ConflictingBuckets:String?) {
+    public init( DisplayID:String, DisplayName :String, MainCatID :String, GlbPath :String, GlbPathOffline :String, CoreBucket:String, ConflictingBuckets:String,Gender:Int) {
         self.DisplayID = DisplayID
         self.DisplayName = DisplayName
         self.MainCatID = MainCatID
         self.GlbPath = GlbPath
         self.GlbPathOffline = GlbPathOffline
         self.CoreBucket = CoreBucket
+        self.Gender = Gender
         self.ConflictingBuckets = ConflictingBuckets
 
     }
@@ -42,6 +44,7 @@ struct ModelData  : Codable
         case GlbPathOffline = "GlbPathOffline"
         case CoreBucket = "CoreBucket"
         case ConflictingBuckets = "ConflictingBuckets"
+        case Gender = "Gender"
     }
 
     // Encodable protocol methods

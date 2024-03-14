@@ -43,7 +43,7 @@ struct AvatarLoaderPanel: View {
             }
         
           SceneView(
-            scene: AvataryugData.shared.sceneView,
+            scene: CommomData.shared.sceneView,
             options: [.autoenablesDefaultLighting, .allowsCameraControl])
           HStack {
 
@@ -103,7 +103,7 @@ struct AvatarLoaderPanel: View {
             }
         }
       }.onAppear {
-        customizeAvatar.SetupNodeInScene {
+          customizeAvatar.SetupNodeInScene(parentNode:  CommomData.shared.sceneView!.rootNode) {
           customizeAvatar.LoadHeadModel {
             customizeAvatar.ResetToDefault()
           }
@@ -201,9 +201,10 @@ struct AvatarLoaderPanel: View {
     if AvataryugData.shared.IsCommonGender(category: cat)! {
       gender = 3
     }
-
+      
+    
     let loadeconomy = EconomyHandler(
-      ApiBase: GetEconomyItems(category: cat, status: 1, gender: gender))
+      ApiBase: GetEconomyItems(category: cat, status: 1, gender: gender,offset: 0,limit:500))
 
     loadeconomy.GetEconomyItems(completionHandler: {
       (response) in

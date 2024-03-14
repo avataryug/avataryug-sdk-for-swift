@@ -321,29 +321,8 @@ class UserAccountManagementHandler {
       })
     }
 
-    func UpdateAvatarUrl(completionHandler: @escaping (Result<UpdateAvatarUrlResult, Error>) -> Void) {
-      ApiBase.CallApi(completionHandler: { (response) in
-        switch response
-        {
-        case .success(let result):
-          completionHandler(.success(result as! UpdateAvatarUrlResult))
-        case .failure(let error):
-          completionHandler(.failure(error))
-        }
-      })
-    }
 
-    func UpdateImageAvatarUrl(completionHandler: @escaping (Result<UpdateImageAvatarUrlResult, Error>) -> Void) {
-      ApiBase.CallApi(completionHandler: { (response) in
-        switch response
-        {
-        case .success(let result):
-          completionHandler(.success(result as! UpdateImageAvatarUrlResult))
-        case .failure(let error):
-          completionHandler(.failure(error))
-        }
-      })
-    }
+
 
     /// Updates the display name of the user in the project.
     func UpdateUserProjectDisplayName(completionHandler: @escaping (Result<UpdateUserProjectDisplayNameResult, Error>) -> Void) {
