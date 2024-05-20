@@ -165,3 +165,82 @@ class AvataryugData
 
 
 
+struct BlendshapeData  : Codable
+{
+    var v:Float
+    var k:String
+
+    public init( val:Float, key :String) {
+        self.v = val
+        self.k = key
+    }
+
+    public enum CodingKeys: String, CodingKey, CaseIterable {
+        case v = "v"
+        case k = "k"
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(v, forKey: .v)
+        try container.encodeIfPresent(k, forKey: .k)
+    }
+};
+
+struct BlendshapePatch : Codable
+{
+    public var Blendshapes :  [BlendshapeData] = []
+}
+
+
+struct PropBucketData : Codable
+{
+    public var ID :  String
+    public var CoreBucket :  String
+    public var TemplateID :  String
+    public var ItemSkin :  String
+    public var Config :  String
+    public var ConflictingBuckets :  String
+    public var Blendshapes :  String
+    public var MainCatID :  String
+}
+
+struct ColorObj :Codable
+{
+    public var LipColor :  String
+    public var FaceColor :  String
+    public var HairColor :  String
+    public var EyebrowColor :  String
+    public var FacialHairColor :  String
+}
+
+struct FinalColor :Codable
+{
+    public var ColorMeta :  ColorObj = ColorObj(LipColor: "#FFFFFF", FaceColor: "#FFFFFF", HairColor: "#FFFFFF", EyebrowColor: "#FFFFFF", FacialHairColor: "#FFFFFF")
+ 
+}
+struct MeshData : Codable
+{
+    public var Platform : String=""
+    public var MeshURL : String=""
+}
+
+struct ImageData : Codable
+{
+    public var Platform : String = ""
+    public var ImageURL : String = ""
+}
+
+struct ImageResult: Codable
+{
+    public var Code: Int = 0
+    public var Status: String = ""
+    public var Data: ImageData = ImageData(Platform: "",ImageURL: "")
+}
+
+struct MeshResult: Codable
+{
+    public var Code: Int = 0
+    public var Status: String = ""
+    public var Data: MeshData = MeshData(Platform: "",MeshURL:  "")
+}

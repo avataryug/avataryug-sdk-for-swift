@@ -1,12 +1,13 @@
 {
+  "originHash" : "f7fa44559ee2c9e9ed020795d090e9040574fe807877c1c6d1c18085ea1cbefc",
   "pins" : [
     {
       "identity" : "dracoswift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/warrenm/DracoSwift.git",
       "state" : {
-        "revision" : "753dda00a67debba06ec3cb25750603f8a6026f0",
-        "version" : "1.5.6"
+        "revision" : "3f85e64b4e62b070871dfdc1e26c058aaa1de63e",
+        "version" : "1.5.7"
       }
     },
     {
@@ -14,10 +15,10 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/warrenm/GLTFKit2.git",
       "state" : {
-        "revision" : "0227f6df43817c0038f04b2399233ea76907cb6d",
-        "version" : "0.5.9"
+        "revision" : "c8a0b4b75dbf5bea25aac0c5c57b993ff84d9023",
+        "version" : "0.5.10"
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }

@@ -114,6 +114,31 @@ class AvatarManagementHandler {
       }
     })
   }
+    
+    func CreateAvatars(completionHandler: @escaping (Result<CreateAvatarResponse, Error>) -> Void) {
+      ApiBase.CallApi(completionHandler: { (response) in
+        switch response
+        {
+        case .success(let result):
+          completionHandler(.success(result as! CreateAvatarResponse))
+        case .failure(let error):
+          completionHandler(.failure(error))
+        }
+      })
+    }
+    
+    func UpdateAvatars(completionHandler: @escaping (Result<String, Error>) -> Void) {
+      ApiBase.CallApi(completionHandler: { (response) in
+        switch response
+        {
+        case .success(let result):
+          completionHandler(.success(result as! String))
+        case .failure(let error):
+          completionHandler(.failure(error))
+        }
+      })
+    }
+
 
   /// Retrive Avatar preset by ID
   func GetAvatarPresetsByID(
@@ -337,6 +362,8 @@ public class GetClips: Base {
   }
 }
 
+
+
 /// Get the specified clip's details by providing ClipID
 public class GetClipsByID: Base {
   public var clipId: String
@@ -455,7 +482,7 @@ class GenerateAvatarMesh: Base {
 
   init(_AvatarID: String, _Platform: GenerateAvatarMeshRequest.Platform) {
     self.AvatarID = _AvatarID
-    self.Platform = _Platform 
+    self.Platform = _Platform
   }
 
   func CallApi(completionHandler: @escaping (Result<AnyObject, Error>) -> Void) {
@@ -526,6 +553,72 @@ class RenderAvatarImage: Base {
         return
       }
       do {
+        completionHandler(.success(response! as AnyObject))
+      }
+    }
+  }
+}
+
+
+class CreateAvatar: Base {
+  public var AvatarData: String
+  public var Platform: String
+
+  init(_AvatarData: String, _Platform: String) {
+    self.AvatarData = _AvatarData
+    self.Platform = _Platform
+  }
+
+  func CallApi(completionHandler: @escaping (Result<AnyObject, Error>) -> Void)
+    {
+        let generaterequest = CreateAvatarRequest(platform: Platform, avatarData: AvatarData)
+        AvatarManagementAPI.createAvatar(createAvatarRequest:generaterequest)
+        {
+            (response, error) in
+            guard error == nil else {
+            if(ProjectSettings.shared.isDebug)
+            {
+              print(error!)
+            }
+            completionHandler(.failure(error!))
+            return
+       }
+       do {
+        completionHandler(.success(response! as AnyObject))
+      }
+    }
+  }
+}
+
+class UpdateAvatars: Base {
+    
+    public var avatarID: String
+    public var patchData: String
+    public var action :String
+    public var patchDataType :String
+    
+  init(_avatarID: String, _patchData: String,_action: String, _patchDataType: String) {
+    self.avatarID = _avatarID
+    self.patchData = _patchData
+    self.action = _action
+    self.patchDataType = _patchDataType
+  }
+
+  func CallApi(completionHandler: @escaping (Result<AnyObject, Error>) -> Void)
+    {
+        let generaterequest = UpdateAvatarRequest(avatarID: avatarID, patchData: patchData, patchDataType: patchDataType, action: action)
+        AvatarManagementAPI.updateAvatar(updateAvatarRequest: generaterequest)
+        {
+            (response, error) in
+            guard error == nil else {
+            if(ProjectSettings.shared.isDebug)
+            {
+              print(error!)
+            }
+            completionHandler(.failure(error!))
+            return
+       }
+       do {
         completionHandler(.success(response! as AnyObject))
       }
     }

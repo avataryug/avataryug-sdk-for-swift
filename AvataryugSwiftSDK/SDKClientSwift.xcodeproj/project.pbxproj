@@ -233,6 +233,10 @@
 		E808C39B2A669E530072AC80 /* ExampleAdvertising.swift in Sources */ = {isa = PBXBuildFile; fileRef = E808C39A2A669E530072AC80 /* ExampleAdvertising.swift */; };
 		E808C39D2A66A25B0072AC80 /* ExampleAvatarmanagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = E808C39C2A66A25B0072AC80 /* ExampleAvatarmanagement.swift */; };
 		E81C0E492A8B7866004DD4DD /* idle_V02_calip.glb in Resources */ = {isa = PBXBuildFile; fileRef = E81C0E482A8B7866004DD4DD /* idle_V02_calip.glb */; };
+		E842D2412BF77FC300213625 /* AvatarBuildHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E842D2402BF77FC300213625 /* AvatarBuildHandler.swift */; };
+		E842D2432BF7808600213625 /* CreateAvatarRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E842D2422BF7808600213625 /* CreateAvatarRequest.swift */; };
+		E842D2452BF780C100213625 /* CreateAvatarResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = E842D2442BF780C100213625 /* CreateAvatarResponse.swift */; };
+		E842D2472BF780DF00213625 /* UpdateAvatarRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E842D2462BF780DF00213625 /* UpdateAvatarRequest.swift */; };
 		E88095522A84FB6E002C689F /* idel_well_05.glb in Resources */ = {isa = PBXBuildFile; fileRef = E880954D2A84FB6E002C689F /* idel_well_05.glb */; };
 		E88095532A84FB6E002C689F /* idel breathing.glb in Resources */ = {isa = PBXBuildFile; fileRef = E880954E2A84FB6E002C689F /* idel breathing.glb */; };
 		E88095542A84FB6E002C689F /* flying_kiss_05.glb in Resources */ = {isa = PBXBuildFile; fileRef = E880954F2A84FB6E002C689F /* flying_kiss_05.glb */; };
@@ -557,6 +561,10 @@
 		E808C39A2A669E530072AC80 /* ExampleAdvertising.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleAdvertising.swift; sourceTree = "<group>"; };
 		E808C39C2A66A25B0072AC80 /* ExampleAvatarmanagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleAvatarmanagement.swift; sourceTree = "<group>"; };
 		E81C0E482A8B7866004DD4DD /* idle_V02_calip.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = idle_V02_calip.glb; sourceTree = "<group>"; };
+		E842D2402BF77FC300213625 /* AvatarBuildHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarBuildHandler.swift; sourceTree = "<group>"; };
+		E842D2422BF7808600213625 /* CreateAvatarRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateAvatarRequest.swift; sourceTree = "<group>"; };
+		E842D2442BF780C100213625 /* CreateAvatarResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateAvatarResponse.swift; sourceTree = "<group>"; };
+		E842D2462BF780DF00213625 /* UpdateAvatarRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAvatarRequest.swift; sourceTree = "<group>"; };
 		E880954D2A84FB6E002C689F /* idel_well_05.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = idel_well_05.glb; sourceTree = "<group>"; };
 		E880954E2A84FB6E002C689F /* idel breathing.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = "idel breathing.glb"; sourceTree = "<group>"; };
 		E880954F2A84FB6E002C689F /* flying_kiss_05.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = flying_kiss_05.glb; sourceTree = "<group>"; };
@@ -988,6 +996,9 @@
 				B2CF33712A65772400E58877 /* VerifyUserWithEmailRequest.swift */,
 				B2CF33292A65772400E58877 /* VerifyUserWithEmailResult.swift */,
 				B2CF33A82A65772400E58877 /* Wallet.swift */,
+				E842D2422BF7808600213625 /* CreateAvatarRequest.swift */,
+				E842D2442BF780C100213625 /* CreateAvatarResponse.swift */,
+				E842D2462BF780DF00213625 /* UpdateAvatarRequest.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1136,6 +1147,7 @@
 				E8D2842D2A6675760097E22B /* CustomizeAvatarLoader.swift */,
 				E8D284342A6675760097E22B /* ModelDecryptionHandler.swift */,
 				E89631B82A6A37020043BC17 /* LoopAllNodes.swift */,
+				E842D2402BF77FC300213625 /* AvatarBuildHandler.swift */,
 			);
 			path = AvatarLoader;
 			sourceTree = "<group>";
@@ -1500,6 +1512,7 @@
 				B2CF347B2A65772500E58877 /* GetEconomyBundlesResult.swift in Sources */,
 				E8D284A32A66B0F70097E22B /* SCNGeometryExtension.swift in Sources */,
 				B2CF34112A65772500E58877 /* GetUserProfileResultData.swift in Sources */,
+				E842D2452BF780C100213625 /* CreateAvatarResponse.swift in Sources */,
 				B2CF34442A65772500E58877 /* ConsumeInstanceRequest.swift in Sources */,
 				B2CF33E62A65772500E58877 /* ApiErrorWrapper.swift in Sources */,
 				B2CF341F2A65772500E58877 /* RegisterUserResultDataUser.swift in Sources */,
@@ -1547,6 +1560,7 @@
 				B2CF33D42A65772500E58877 /* AdvertisingHandler.swift in Sources */,
 				E8D2845A2A6675760097E22B /* AvatarLoaderPanel.swift in Sources */,
 				E8D284752A6675760097E22B /* ModelDecryptionHandler.swift in Sources */,
+				E842D2412BF77FC300213625 /* AvatarBuildHandler.swift in Sources */,
 				B2CF34582A65772500E58877 /* LinkIOSDeviceIDResult.swift in Sources */,
 				B2CF32C62A65767600E58877 /* ContentView.swift in Sources */,
 				B2CF33DA2A65772500E58877 /* Enums.swift in Sources */,
@@ -1563,6 +1577,7 @@
 				B2CF34252A65772500E58877 /* SendAccountVerificationEmailRequest.swift in Sources */,
 				B2CF33D22A65772500E58877 /* AvatarManagementHandler.swift in Sources */,
 				B2CF34712A65772500E58877 /* PayForPurchaseRequest.swift in Sources */,
+				E842D2472BF780DF00213625 /* UpdateAvatarRequest.swift in Sources */,
 				B2CF343B2A65772500E58877 /* UpdateImageAvatarUrlResult.swift in Sources */,
 				B2CF33EC2A65772500E58877 /* GetEconomyStoresResult.swift in Sources */,
 				B2CF340F2A65772500E58877 /* UnlinkFacebookAccountResult.swift in Sources */,
@@ -1591,6 +1606,7 @@
 				B2CF349C2A65772500E58877 /* CodableHelper.swift in Sources */,
 				B2CF347E2A65772500E58877 /* GetClipsByIDResultData.swift in Sources */,
 				B2CF34902A65772500E58877 /* GetUserProfileResultDataDefaultAvatar.swift in Sources */,
+				E842D2432BF7808600213625 /* CreateAvatarRequest.swift in Sources */,
 				B2CF343D2A65772500E58877 /* ConfirmPurchaseRequest.swift in Sources */,
 				B2CF34172A65772500E58877 /* GetAdPlacementByIDResultData.swift in Sources */,
 				B2CF34732A65772500E58877 /* LoginWithAppleRequest.swift in Sources */,

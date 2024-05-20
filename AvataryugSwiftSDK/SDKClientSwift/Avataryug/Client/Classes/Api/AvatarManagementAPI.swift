@@ -32,7 +32,7 @@ open class AvatarManagementAPI {
        - type: http
        - name: bearerAuth
      - parameter generateAvatarMeshRequest: (body)  (optional)
-     - returns: RequestBuilder<GenerateAvatarMeshResult> 
+     - returns: RequestBuilder<GenerateAvatarMeshResult>
      */
     open class func generateAvatarMeshWithRequestBuilder(generateAvatarMeshRequest: GenerateAvatarMeshRequest? = nil) -> RequestBuilder<GenerateAvatarMeshResult> {
         let localVariablePath = "/GenerateAvatarMesh"
@@ -74,8 +74,8 @@ open class AvatarManagementAPI {
     /**
      Get Avatar Presets
      
-     - parameter status: (query) Status of the items Draft &#x3D; 0, Active &#x3D; 1, InActive &#x3D; 2, Expired &#x3D; 3 
-     - parameter gender: (query) Gender of the preset Male &#x3D; 1, Female &#x3D; 2, Both &#x3D; 3 
+     - parameter status: (query) Status of the items Draft &#x3D; 0, Active &#x3D; 1, InActive &#x3D; 2, Expired &#x3D; 3
+     - parameter gender: (query) Gender of the preset Male &#x3D; 1, Female &#x3D; 2, Both &#x3D; 3
      - parameter apiResponseQueue: The queue on which api response is dispatched.
      - parameter completion: completion handler to receive the data and the error objects
      */
@@ -98,9 +98,9 @@ open class AvatarManagementAPI {
      - BASIC:
        - type: http
        - name: bearerAuth
-     - parameter status: (query) Status of the items Draft &#x3D; 0, Active &#x3D; 1, InActive &#x3D; 2, Expired &#x3D; 3 
-     - parameter gender: (query) Gender of the preset Male &#x3D; 1, Female &#x3D; 2, Both &#x3D; 3 
-     - returns: RequestBuilder<GetAvatarPresetsResult> 
+     - parameter status: (query) Status of the items Draft &#x3D; 0, Active &#x3D; 1, InActive &#x3D; 2, Expired &#x3D; 3
+     - parameter gender: (query) Gender of the preset Male &#x3D; 1, Female &#x3D; 2, Both &#x3D; 3
+     - returns: RequestBuilder<GetAvatarPresetsResult>
      */
     open class func getAvatarPresetsWithRequestBuilder(status: Status_getAvatarPresets, gender: Gender_getAvatarPresets) -> RequestBuilder<GetAvatarPresetsResult> {
         let localVariablePath = "/GetAvatarPresets"
@@ -127,7 +127,7 @@ open class AvatarManagementAPI {
     /**
      Get Avatar Presets By ID
      
-     - parameter avatarPresetID: (query) Unique Identifier for the Avatar Preset which is being requested 
+     - parameter avatarPresetID: (query) Unique Identifier for the Avatar Preset which is being requested
      - parameter apiResponseQueue: The queue on which api response is dispatched.
      - parameter completion: completion handler to receive the data and the error objects
      */
@@ -150,8 +150,8 @@ open class AvatarManagementAPI {
      - BASIC:
        - type: http
        - name: bearerAuth
-     - parameter avatarPresetID: (query) Unique Identifier for the Avatar Preset which is being requested 
-     - returns: RequestBuilder<GetAvatarPresetByIDResult> 
+     - parameter avatarPresetID: (query) Unique Identifier for the Avatar Preset which is being requested
+     - returns: RequestBuilder<GetAvatarPresetByIDResult>
      */
     open class func getAvatarPresetsByIDWithRequestBuilder(avatarPresetID: String) -> RequestBuilder<GetAvatarPresetByIDResult> {
         let localVariablePath = "/GetAvatarPresetsByID"
@@ -186,7 +186,7 @@ open class AvatarManagementAPI {
     /**
      Get Clips
      
-     - parameter status: (query) Status of the clips Draft&#x3D; 0, Active&#x3D;1, InActive&#x3D;2 
+     - parameter status: (query) Status of the clips Draft&#x3D; 0, Active&#x3D;1, InActive&#x3D;2
      - parameter apiResponseQueue: The queue on which api response is dispatched.
      - parameter completion: completion handler to receive the data and the error objects
      */
@@ -209,8 +209,8 @@ open class AvatarManagementAPI {
      - BASIC:
        - type: http
        - name: bearerAuth
-     - parameter status: (query) Status of the clips Draft&#x3D; 0, Active&#x3D;1, InActive&#x3D;2 
-     - returns: RequestBuilder<GetClipsResult> 
+     - parameter status: (query) Status of the clips Draft&#x3D; 0, Active&#x3D;1, InActive&#x3D;2
+     - returns: RequestBuilder<GetClipsResult>
      */
     open class func getClipsWithRequestBuilder(status: Status_getClips) -> RequestBuilder<GetClipsResult> {
         let localVariablePath = "/GetClips"
@@ -236,7 +236,7 @@ open class AvatarManagementAPI {
     /**
      Get Clips By ID
      
-     - parameter clipID: (query) Unique Identifier for the clip 
+     - parameter clipID: (query) Unique Identifier for the clip
      - parameter apiResponseQueue: The queue on which api response is dispatched.
      - parameter completion: completion handler to receive the data and the error objects
      */
@@ -259,8 +259,8 @@ open class AvatarManagementAPI {
      - BASIC:
        - type: http
        - name: bearerAuth
-     - parameter clipID: (query) Unique Identifier for the clip 
-     - returns: RequestBuilder<GetClipsByIDResult> 
+     - parameter clipID: (query) Unique Identifier for the clip
+     - returns: RequestBuilder<GetClipsByIDResult>
      */
     open class func getClipsByIDWithRequestBuilder(clipID: String) -> RequestBuilder<GetClipsByIDResult> {
         let localVariablePath = "/GetClipsByID"
@@ -286,7 +286,7 @@ open class AvatarManagementAPI {
     /**
      Get Expression By ID
      
-     - parameter expressionID: (query) Unique Identifier for the expression 
+     - parameter expressionID: (query) Unique Identifier for the expression
      - parameter apiResponseQueue: The queue on which api response is dispatched.
      - parameter completion: completion handler to receive the data and the error objects
      */
@@ -309,8 +309,8 @@ open class AvatarManagementAPI {
      - BASIC:
        - type: http
        - name: bearerAuth
-     - parameter expressionID: (query) Unique Identifier for the expression 
-     - returns: RequestBuilder<GetExpressionByIDResult> 
+     - parameter expressionID: (query) Unique Identifier for the expression
+     - returns: RequestBuilder<GetExpressionByIDResult>
      */
     open class func getExpressionByIDWithRequestBuilder(expressionID: String) -> RequestBuilder<GetExpressionByIDResult> {
         let localVariablePath = "/GetExpressionByID"
@@ -345,7 +345,7 @@ open class AvatarManagementAPI {
     /**
      Get Expressions
      
-     - parameter status: (query) Status of Expressions Draft &#x3D; 0, Active &#x3D; 1, InActive&#x3D;2 
+     - parameter status: (query) Status of Expressions Draft &#x3D; 0, Active &#x3D; 1, InActive&#x3D;2
      - parameter apiResponseQueue: The queue on which api response is dispatched.
      - parameter completion: completion handler to receive the data and the error objects
      */
@@ -368,8 +368,8 @@ open class AvatarManagementAPI {
      - BASIC:
        - type: http
        - name: bearerAuth
-     - parameter status: (query) Status of Expressions Draft &#x3D; 0, Active &#x3D; 1, InActive&#x3D;2 
-     - returns: RequestBuilder<GetExpressionsResult> 
+     - parameter status: (query) Status of Expressions Draft &#x3D; 0, Active &#x3D; 1, InActive&#x3D;2
+     - returns: RequestBuilder<GetExpressionsResult>
      */
     open class func getExpressionsWithRequestBuilder(status: Status_getExpressions) -> RequestBuilder<GetExpressionsResult> {
         let localVariablePath = "/GetExpressions"
@@ -407,7 +407,7 @@ open class AvatarManagementAPI {
     /**
      Get All Bucket Vertices
      
-     - parameter platform: (query) Name of the platform. I.e. Unreal, Unity 
+     - parameter platform: (query) Name of the platform. I.e. Unreal, Unity
      - parameter apiResponseQueue: The queue on which api response is dispatched.
      - parameter completion: completion handler to receive the data and the error objects
      */
@@ -430,8 +430,8 @@ open class AvatarManagementAPI {
      - BASIC:
        - type: http
        - name: bearerAuth
-     - parameter platform: (query) Name of the platform. I.e. Unreal, Unity 
-     - returns: RequestBuilder<GetAllBucketVerticesResult> 
+     - parameter platform: (query) Name of the platform. I.e. Unreal, Unity
+     - returns: RequestBuilder<GetAllBucketVerticesResult>
      */
     open class func getGetallbucketverticesWithRequestBuilder(platform: Platform_getGetallbucketvertices) -> RequestBuilder<GetAllBucketVerticesResult> {
         let localVariablePath = "/GetAllBucketVertices"
@@ -481,7 +481,7 @@ open class AvatarManagementAPI {
        - type: http
        - name: bearerAuth
      - parameter grantAvatarPresetItemsToUserRequest: (body) Request payload (optional)
-     - returns: RequestBuilder<GrantAvatarPresetItemsToUserResult> 
+     - returns: RequestBuilder<GrantAvatarPresetItemsToUserResult>
      */
     open class func grantAvatarPresetItemsToUserWithRequestBuilder(grantAvatarPresetItemsToUserRequest: GrantAvatarPresetItemsToUserRequest? = nil) -> RequestBuilder<GrantAvatarPresetItemsToUserResult> {
         let localVariablePath = "/GrantAvatarPresetItemsToUser"
@@ -528,7 +528,7 @@ open class AvatarManagementAPI {
        - type: http
        - name: bearerAuth
      - parameter grantAvatarPresetToUserRequest: (body)  (optional)
-     - returns: RequestBuilder<GrantAvatarPresetToUserResult> 
+     - returns: RequestBuilder<GrantAvatarPresetToUserResult>
      */
     open class func grantAvatarPresetToUserWithRequestBuilder(grantAvatarPresetToUserRequest: GrantAvatarPresetToUserRequest? = nil) -> RequestBuilder<GrantAvatarPresetToUserResult> {
         let localVariablePath = "/GrantAvatarPresetToUser"
@@ -575,7 +575,7 @@ open class AvatarManagementAPI {
        - type: http
        - name: bearerAuth
      - parameter renderAvatarImageRequest: (body)  (optional)
-     - returns: RequestBuilder<RenderAvatarImageResult> 
+     - returns: RequestBuilder<RenderAvatarImageResult>
      */
     open class func renderAvatarImageWithRequestBuilder(renderAvatarImageRequest: RenderAvatarImageRequest? = nil) -> RequestBuilder<RenderAvatarImageResult> {
         let localVariablePath = "/RenderAvatarImage"
@@ -622,7 +622,7 @@ open class AvatarManagementAPI {
        - type: http
        - name: bearerAuth
      - parameter syncAvatarsRequest: (body)  (optional)
-     - returns: RequestBuilder<SyncAvatarsResult> 
+     - returns: RequestBuilder<SyncAvatarsResult>
      */
     open class func syncAvatarsWithRequestBuilder(syncAvatarsRequest: SyncAvatarsRequest? = nil) -> RequestBuilder<SyncAvatarsResult> {
         let localVariablePath = "/SyncAvatars"
@@ -638,6 +638,70 @@ open class AvatarManagementAPI {
         let localVariableHeaderParameters = APIHelper.rejectNilHeaders(localVariableNillableHeaders)
 
         let localVariableRequestBuilder: RequestBuilder<SyncAvatarsResult>.Type = OpenAPIClientAPI.requestBuilderFactory.getBuilder()
+
+        return localVariableRequestBuilder.init(method: "POST", URLString: (localVariableUrlComponents?.string ?? localVariableURLString), parameters: localVariableParameters, headers: localVariableHeaderParameters, requiresAuthentication: true)
+    }
+    
+    
+  
+    @discardableResult
+    open class func updateAvatar(updateAvatarRequest: UpdateAvatarRequest? = nil, apiResponseQueue: DispatchQueue = OpenAPIClientAPI.apiResponseQueue, completion: @escaping ((_ data: String?, _ error: Error?) -> Void)) -> RequestTask {
+        return updateAvatarRequestBuilder(updateAvatarRequest: updateAvatarRequest).execute(apiResponseQueue) { result in
+            switch result {
+            case let .success(response):
+                completion(response.body, nil)
+            case let .failure(error):
+                completion(nil, error)
+            }
+        }
+    }
+
+
+    open class func updateAvatarRequestBuilder(updateAvatarRequest: UpdateAvatarRequest? = nil) -> RequestBuilder<String> {
+        let localVariablePath = "/UpdateAvatar"
+        let localVariableURLString = OpenAPIClientAPI.basePath + localVariablePath
+        let localVariableParameters = JSONEncodingHelper.encodingParameters(forEncodableObject: updateAvatarRequest)
+
+        let localVariableUrlComponents = URLComponents(string: localVariableURLString)
+
+        let localVariableNillableHeaders: [String: Any?] = [
+            :
+        ]
+
+        let localVariableHeaderParameters = APIHelper.rejectNilHeaders(localVariableNillableHeaders)
+
+        let localVariableRequestBuilder: RequestBuilder<String>.Type = OpenAPIClientAPI.requestBuilderFactory.getBuilder()
+
+        return localVariableRequestBuilder.init(method: "PATCH", URLString: (localVariableUrlComponents?.string ?? localVariableURLString), parameters: localVariableParameters, headers: localVariableHeaderParameters, requiresAuthentication: true)
+    }
+    
+    
+    @discardableResult
+    open class func createAvatar(createAvatarRequest: CreateAvatarRequest? = nil, apiResponseQueue: DispatchQueue = OpenAPIClientAPI.apiResponseQueue, completion: @escaping ((_ data: CreateAvatarResponse?, _ error: Error?) -> Void)) -> RequestTask {
+        return createAvatarRequestBuilder(createAvatarRequest: createAvatarRequest).execute(apiResponseQueue) { result in
+            switch result {
+            case let .success(response):
+                completion(response.body, nil)
+            case let .failure(error):
+                completion(nil, error)
+            }
+        }
+    }
+
+    open class func createAvatarRequestBuilder(createAvatarRequest: CreateAvatarRequest? = nil) -> RequestBuilder<CreateAvatarResponse> {
+        let localVariablePath = "/CreateAvatar"
+        let localVariableURLString = OpenAPIClientAPI.basePath + localVariablePath
+        let localVariableParameters = JSONEncodingHelper.encodingParameters(forEncodableObject: createAvatarRequest)
+
+        let localVariableUrlComponents = URLComponents(string: localVariableURLString)
+
+        let localVariableNillableHeaders: [String: Any?] = [
+            :
+        ]
+
+        let localVariableHeaderParameters = APIHelper.rejectNilHeaders(localVariableNillableHeaders)
+
+        let localVariableRequestBuilder: RequestBuilder<CreateAvatarResponse>.Type = OpenAPIClientAPI.requestBuilderFactory.getBuilder()
 
         return localVariableRequestBuilder.init(method: "POST", URLString: (localVariableUrlComponents?.string ?? localVariableURLString), parameters: localVariableParameters, headers: localVariableHeaderParameters, requiresAuthentication: true)
     }
